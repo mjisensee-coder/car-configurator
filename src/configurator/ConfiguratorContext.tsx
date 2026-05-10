@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { CarConfig, EnvironmentId, StickerId } from '@/types';
-import { DEFAULT_CONFIG } from '@/services/buildService';
+import { DEFAULT_CONFIG, normalizeEnvironmentId } from '@/services/buildService';
 
 /**
  * Configurator state — the entire 3D car is a function of this CarConfig.
@@ -88,9 +88,15 @@ export function ConfiguratorProvider({ children }: { children: ReactNode }) {
     (next: CarConfig) =>
       // Fill in defaults for any field a partial config may be missing
       // (older share links / gallery builds may predate newer fields).
+      // Sanitize the environment id so retired ids in older builds
+      // remap to a current one.
       dispatch({
         type: 'load',
-        config: { ...DEFAULT_CONFIG, ...next },
+        config: {
+          ...DEFAULT_CONFIG,
+          ...next,
+          environmentId: normalizeEnvironmentId(next.environmentId),
+        },
       }),
     [],
   );

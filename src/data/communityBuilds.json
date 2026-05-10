@@ -11,7 +11,7 @@
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "mtech",
       "rideHeight": -0.18,
-      "environmentId": "mountain-road"
+      "environmentId": "modern-showroom"
     },
     "totalCost": 6325,
     "tags": [
@@ -95,7 +95,7 @@
       "exhaustId": "exhaust-borla-dual",
       "stickerId": "mtech",
       "rideHeight": -0.15,
-      "environmentId": "mountain-road"
+      "environmentId": "modern-showroom"
     },
     "totalCost": 6985,
     "tags": [
@@ -137,7 +137,7 @@
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "hartge",
       "rideHeight": -0.04,
-      "environmentId": "pro-garage"
+      "environmentId": "led-studio"
     },
     "totalCost": 3206,
     "tags": [
@@ -200,7 +200,7 @@
       "exhaustId": "exhaust-borla-dual",
       "stickerId": "alpina",
       "rideHeight": -0.1,
-      "environmentId": "mountain-road"
+      "environmentId": "modern-showroom"
     },
     "totalCost": 6436,
     "tags": [

@@ -40,10 +40,21 @@ export type ExhaustStyle = 'single-tip' | 'dual-tip' | 'megaphone';
 export type StickerId = 'none' | 'mtech' | 'alpina' | 'hartge' | 'is-it-stance';
 
 export type EnvironmentId =
-  | 'pro-garage'
   | 'showroom'
-  | 'mountain-road'
-  | 'city-night';
+  | 'city-night'
+  | 'modern-showroom'
+  | 'led-studio';
+
+/**
+ * Legacy environment ids that have been retired. Old share links and
+ * gallery builds may still carry these — they get sanitized to a valid
+ * id by `decodeConfig` / `loadConfig`. Kept here only for the type-level
+ * reference; never returned to consumers.
+ */
+export const LEGACY_ENV_REMAP: Record<string, EnvironmentId> = {
+  'pro-garage': 'led-studio',
+  'mountain-road': 'modern-showroom',
+};
 
 export interface CarConfig {
   paintId: string;

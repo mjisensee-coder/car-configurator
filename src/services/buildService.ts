@@ -1,5 +1,35 @@
-import type { CarConfig, Part, SelectedPartsSummary } from '@/types';
+import type {
+  CarConfig,
+  EnvironmentId,
+  Part,
+  SelectedPartsSummary,
+} from '@/types';
+import { LEGACY_ENV_REMAP } from '@/types';
 import { getPartById } from './partsService';
+
+const VALID_ENVIRONMENT_IDS: readonly EnvironmentId[] = [
+  'showroom',
+  'city-night',
+  'modern-showroom',
+  'led-studio',
+];
+
+/**
+ * Sanitize any string into a valid EnvironmentId. Falls back to legacy
+ * remapping (for retired ids) and finally the default. Used at every
+ * inbound boundary — share-link decode, gallery-build load — so the
+ * configurator state is never holding an invalid id.
+ */
+export function normalizeEnvironmentId(value: unknown): EnvironmentId {
+  if (typeof value !== 'string') return DEFAULT_CONFIG.environmentId;
+  if ((VALID_ENVIRONMENT_IDS as readonly string[]).includes(value)) {
+    return value as EnvironmentId;
+  }
+  if (value in LEGACY_ENV_REMAP) {
+    return LEGACY_ENV_REMAP[value]!;
+  }
+  return DEFAULT_CONFIG.environmentId;
+}
 
 /**
  * Resolves a CarConfig into the actual selected Part records and computes totals.
@@ -61,11 +91,11 @@ export function decodeConfig(encoded: string): CarConfig | null {
       typeof parsed.stickerId === 'string' &&
       typeof parsed.rideHeight === 'number'
     ) {
-      // environmentId was added later; tolerate older share links by
-      // falling back to the default.
+      // environmentId may be missing (older share links predate it)
+      // or carry a retired id (legacy environments). Sanitize either way.
       return {
         ...parsed,
-        environmentId: parsed.environmentId ?? DEFAULT_CONFIG.environmentId,
+        environmentId: normalizeEnvironmentId(parsed.environmentId),
       } as CarConfig;
     }
     return null;
