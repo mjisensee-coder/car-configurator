@@ -40,20 +40,26 @@ function EnvironmentChip({
       type="button"
       onClick={onClick}
       title={preset.vibe}
-      className={`group relative flex flex-col items-center gap-1.5 rounded-xl px-2.5 py-2 transition-all ${
+      className={`group relative flex flex-col items-center gap-1.5 rounded-xl px-2 py-2 transition-all ${
         active
           ? 'bg-garage-700/60 border border-accent shadow-glow'
           : 'border border-transparent hover:border-garage-600 hover:bg-garage-800/40'
       }`}
     >
-      <div
-        className="w-12 h-9 sm:w-16 sm:h-10 rounded-md overflow-hidden border border-garage-600/60 relative"
-        style={{ background: gradientForPreset(preset) }}
-      >
-        {/* Subtle silhouette so the swatch reads as "stage" */}
-        <div className="absolute inset-x-1 bottom-1 h-1 rounded bg-black/40" />
+      <div className="w-20 h-12 sm:w-24 sm:h-14 rounded-md overflow-hidden border border-garage-600/60 relative bg-garage-800">
+        <img
+          src={preset.thumbnailUrl}
+          alt={preset.name}
+          loading="lazy"
+          className={`w-full h-full object-cover transition-all ${
+            active ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'
+          }`}
+          draggable={false}
+        />
+        {/* Subtle bottom gradient so the label below reads cleanly */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
       </div>
-      <div className="leading-tight">
+      <div className="leading-tight text-center">
         <div
           className={`text-[11px] font-semibold ${
             active ? 'text-garage-100' : 'text-garage-300 group-hover:text-garage-100'
@@ -67,14 +73,4 @@ function EnvironmentChip({
       )}
     </button>
   );
-}
-
-/**
- * Synthesize a gradient swatch from the preset's thumbnail color and
- * key-light color so each chip feels visually distinct without needing
- * a real screenshot.
- */
-function gradientForPreset(preset: EnvironmentPreset): string {
-  const keyLight = preset.lights.find((l) => l.type !== 'point')?.color ?? '#ffffff';
-  return `linear-gradient(135deg, ${preset.thumbnail} 0%, ${preset.thumbnail} 55%, ${keyLight}33 100%)`;
 }

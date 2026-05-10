@@ -1,11 +1,21 @@
-import { Environment, ContactShadows } from '@react-three/drei';
-import type { EnvironmentPreset, LightSpec } from './environmentPresets';
+import {
+  Environment,
+  ContactShadows,
+  MeshReflectorMaterial,
+} from '@react-three/drei';
+import type { EnvironmentPreset, FloorSpec, LightSpec } from './environmentPresets';
 
 /**
- * Scene environment block: HDRI + lights + floor + contact shadows.
+ * Scene environment block: HDRI panoramic background + image-based
+ * lighting + supplemental stage lights + floor + contact shadows.
  *
- * Owned entirely by the active preset. Swap presets to swap the scene's
- * mood without touching the car or controls.
+ * The HDRI does triple duty: it's the panoramic background you see
+ * around the car AND the image-based lighting source that drives
+ * realistic reflections on the body paint AND the source the floor
+ * mirrors back via MeshReflectorMaterial.
+ *
+ * Owned entirely by the active preset. Swap presets to swap the
+ * scene's location without touching the car or controls.
  */
 
 interface SceneEnvironmentProps {
@@ -15,7 +25,11 @@ interface SceneEnvironmentProps {
 export function SceneEnvironment({ preset }: SceneEnvironmentProps) {
   return (
     <>
-      <color attach="background" args={[preset.background]} />
+      {/* No solid <color> background — the HDRI is the background. */}
+
+      {/* Fog tints the car/floor near-distance for atmospheric environments
+          (city-night). It does NOT tint the HDRI background, which sits
+          at infinity. */}
       {preset.fog && (
         <fog attach="fog" args={[preset.fog.color, preset.fog.near, preset.fog.far]} />
       )}
@@ -25,39 +39,18 @@ export function SceneEnvironment({ preset }: SceneEnvironmentProps) {
         <PresetLight key={i} spec={l} />
       ))}
 
-      <Environment files={preset.hdriUrl} background={false} />
+      {/* HDRI as panoramic background AND image-based lighting source. */}
+      <Environment files={preset.hdriUrl} background blur={0} />
 
-      {/* Floor disc with optional sheen overlay for wet/glossy environments. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[14, 64]} />
-        <meshStandardMaterial
-          color={preset.ground.color}
-          metalness={preset.ground.metalness}
-          roughness={preset.ground.roughness}
-        />
-      </mesh>
-      {preset.ground.sheen && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.0008, 0]}>
-          <circleGeometry args={[14, 64]} />
-          <meshPhysicalMaterial
-            color={preset.ground.color}
-            metalness={1}
-            roughness={0.05}
-            transparent
-            opacity={0.35}
-            clearcoat={1}
-            clearcoatRoughness={0.05}
-          />
-        </mesh>
-      )}
-      {/* Subtle accent ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-        <ringGeometry args={[3.4, 3.42, 64]} />
-        <meshBasicMaterial color="#26262f" transparent opacity={0.4} />
-      </mesh>
+      {/* Floor: real reflections via MeshReflectorMaterial for glossy
+          environments, flat PBR for matte ones (asphalt road). */}
+      <Floor floor={preset.floor} />
 
+      {/* Contact shadow under the car — grounds it visually regardless
+          of floor mode. Sits a hair above the floor to avoid Z-fighting
+          with the reflector material. */}
       <ContactShadows
-        position={[0, 0.001, 0]}
+        position={[0, 0.005, 0]}
         opacity={preset.contactShadow.opacity}
         scale={20}
         blur={preset.contactShadow.blur}
@@ -65,6 +58,47 @@ export function SceneEnvironment({ preset }: SceneEnvironmentProps) {
         color={preset.contactShadow.color}
       />
     </>
+  );
+}
+
+function Floor({ floor }: { floor: FloorSpec }) {
+  // 60×60 plane is large enough that its edge sits well below the
+  // horizon line of the HDRI for any allowed camera angle, so the
+  // transition is invisible.
+  const COMMON = (
+    <planeGeometry args={[60, 60]} />
+  );
+
+  if (floor.mode === 'reflector') {
+    return (
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        {COMMON}
+        <MeshReflectorMaterial
+          mirror={floor.mirrorMix ?? 0.5}
+          blur={[floor.blurAmount ?? 200, floor.blurAmount ?? 200]}
+          resolution={1024}
+          mixBlur={1.4}
+          mixStrength={3.5}
+          minDepthThreshold={0.85}
+          maxDepthThreshold={1}
+          depthScale={1.2}
+          color={floor.color}
+          metalness={floor.metalness}
+          roughness={floor.roughness}
+        />
+      </mesh>
+    );
+  }
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      {COMMON}
+      <meshStandardMaterial
+        color={floor.color}
+        metalness={floor.metalness}
+        roughness={floor.roughness}
+      />
+    </mesh>
   );
 }
 
