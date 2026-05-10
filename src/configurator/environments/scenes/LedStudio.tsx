@@ -4,8 +4,6 @@ import {
   ContactShadows,
   MeshReflectorMaterial,
 } from '@react-three/drei';
-import { Box3, Vector3 } from 'three';
-import { useMemo } from 'react';
 import {
   SketchfabSceneFallback,
   useClonedSceneFromUrl,
@@ -15,14 +13,15 @@ import {
  * LED Studio — "Studio V1 For Car" by Velocity Motion (Sketchfab, CC BY 4.0).
  * https://sketchfab.com/3d-models/studio-v1-for-car-9c45d19a7d434e2ca1640d6d2146e895
  *
- * Ultra-light 178-face dark studio with built-in LED lighting strips. Drop
- * the GLB at `public/environments/led-studio.glb` to enable.
+ * Ultra-low-poly studio (~360 vertices) with emissive LED-strip
+ * materials baked in. Native scale = real-world meters (bbox 28m × 3m
+ * × 28m, floor at y=0). Mount as-is — the car at world origin sits
+ * naturally on the studio floor.
  *
- * Falls back to a minimal procedural dark room with our own LED-strip
- * suggestions so the car still has a coherent backdrop.
+ * The 12MB file weight is texture data, not geometry.
  */
 
-const MODEL_URL = '/environments/led-studio.glb';
+const MODEL_URL = '/environments/studio_v1_for_car.glb';
 
 export function LedStudio() {
   return (
@@ -104,25 +103,7 @@ export function LedStudio() {
 
 function LedStudioGLB({ url }: { url: string }) {
   const cloned = useClonedSceneFromUrl(url);
-
-  // Studio V1 is 178 faces — small, simple, likely already car-sized.
-  // Auto-scale to a 14m footprint so the car fills the studio nicely.
-  const { scale, yLift } = useMemo(() => {
-    cloned.updateMatrixWorld(true);
-    const box = new Box3().setFromObject(cloned);
-    const size = box.getSize(new Vector3());
-    const longAxis = Math.max(size.x, size.z);
-    const TARGET_FOOTPRINT = 14;
-    const s = longAxis > 0 ? TARGET_FOOTPRINT / longAxis : 1;
-    const minYAfterScale = box.min.y * s;
-    return { scale: s, yLift: -minYAfterScale };
-  }, [cloned]);
-
-  return (
-    <group position={[0, yLift, 0]} scale={scale}>
-      <primitive object={cloned} />
-    </group>
-  );
+  return <primitive object={cloned} />;
 }
 
 function MinimalLedStudioFallback() {

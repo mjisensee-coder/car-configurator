@@ -4,8 +4,6 @@ import {
   ContactShadows,
   MeshReflectorMaterial,
 } from '@react-three/drei';
-import { Box3, Vector3 } from 'three';
-import { useMemo } from 'react';
 import {
   SketchfabSceneFallback,
   useClonedSceneFromUrl,
@@ -15,15 +13,15 @@ import {
  * Modern Showroom — "Car-Showroom 2" by Polsaris (Sketchfab, CC BY 4.0).
  * https://sketchfab.com/3d-models/car-showroom-2-e7a3497e8a7c487e906b2d8814b018f0
  *
- * 44K-face glass-ceiling showroom interior. Drop the GLB at
- * `public/environments/modern-showroom.glb` to enable.
+ * 44K-face glass-ceiling showroom interior. Native scale = real-world
+ * meters (bounding box 28.6m × 3.2m × 28.6m, floor at y≈0), so we mount
+ * as-is. The car at world origin (4.32m long) sits naturally at the
+ * showroom's geometric center.
  *
- * Until the file is in place, falls back to a minimal procedural room so
- * the car still has a floor and walls, plus an in-scene message pointing
- * the operator at the download URL.
+ * Until the GLB is in place, falls back to a minimal procedural room.
  */
 
-const MODEL_URL = '/environments/modern-showroom.glb';
+const MODEL_URL = '/environments/car-showroom_2.glb';
 
 export function ModernShowroom() {
   return (
@@ -87,33 +85,12 @@ export function ModernShowroom() {
 }
 
 /**
- * Renders the loaded showroom GLB. Auto-scales by bounding box to a
- * sensible footprint so the car (4.32m long) sits at the right relative
- * size in the centre of the room.
+ * Renders the loaded showroom GLB at native scale. Polsaris's model is
+ * already in meters with the floor at y=0; no transform needed.
  */
 function ShowroomGLB({ url }: { url: string }) {
   const cloned = useClonedSceneFromUrl(url);
-
-  // Compute auto-scale + ground offset once. Showroom GLBs from Sketchfab
-  // come in arbitrary unit scales — we size them so the longest horizontal
-  // axis is ~30m (a generous showroom footprint relative to a 4.3m car),
-  // then lift so the floor sits at y=0.
-  const { scale, yLift } = useMemo(() => {
-    cloned.updateMatrixWorld(true);
-    const box = new Box3().setFromObject(cloned);
-    const size = box.getSize(new Vector3());
-    const longAxis = Math.max(size.x, size.z);
-    const TARGET_FOOTPRINT = 30;
-    const s = longAxis > 0 ? TARGET_FOOTPRINT / longAxis : 1;
-    const minYAfterScale = box.min.y * s;
-    return { scale: s, yLift: -minYAfterScale };
-  }, [cloned]);
-
-  return (
-    <group position={[0, yLift, 0]} scale={scale}>
-      <primitive object={cloned} />
-    </group>
-  );
+  return <primitive object={cloned} />;
 }
 
 /**
