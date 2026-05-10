@@ -10,10 +10,15 @@
       "wheelId": "wheels-bbs-rs",
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "mtech",
-      "rideHeight": -0.18
+      "rideHeight": -0.18,
+      "environmentId": "mountain-road"
     },
     "totalCost": 6325,
-    "tags": ["track", "m3-tribute", "period-correct"]
+    "tags": [
+      "track",
+      "m3-tribute",
+      "period-correct"
+    ]
   },
   {
     "id": "build-bronzit-daily",
@@ -26,10 +31,15 @@
       "wheelId": "wheels-ronal-lsi",
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "none",
-      "rideHeight": -0.05
+      "rideHeight": -0.05,
+      "environmentId": "showroom"
     },
     "totalCost": 3406,
-    "tags": ["daily", "restoration", "patina"]
+    "tags": [
+      "daily",
+      "restoration",
+      "patina"
+    ]
   },
   {
     "id": "build-mtech-widebody",
@@ -42,10 +52,15 @@
       "wheelId": "wheels-borbet-a",
       "exhaustId": "exhaust-akrapovic",
       "stickerId": "mtech",
-      "rideHeight": -0.22
+      "rideHeight": -0.22,
+      "environmentId": "city-night"
     },
     "totalCost": 6886,
-    "tags": ["widebody", "modern", "aggressive"]
+    "tags": [
+      "widebody",
+      "modern",
+      "aggressive"
+    ]
   },
   {
     "id": "build-drift-missile",
@@ -58,10 +73,15 @@
       "wheelId": "wheels-mtech-bottle",
       "exhaustId": "exhaust-magnaflow-mega",
       "stickerId": "is-it-stance",
-      "rideHeight": -0.12
+      "rideHeight": -0.12,
+      "environmentId": "city-night"
     },
     "totalCost": 4825,
-    "tags": ["drift", "track", "loud"]
+    "tags": [
+      "drift",
+      "track",
+      "loud"
+    ]
   },
   {
     "id": "build-zinno-tour",
@@ -74,10 +94,15 @@
       "wheelId": "wheels-bbs-rs",
       "exhaustId": "exhaust-borla-dual",
       "stickerId": "mtech",
-      "rideHeight": -0.15
+      "rideHeight": -0.15,
+      "environmentId": "mountain-road"
     },
     "totalCost": 6985,
-    "tags": ["touring", "m-tribute", "fast-road"]
+    "tags": [
+      "touring",
+      "m-tribute",
+      "fast-road"
+    ]
   },
   {
     "id": "build-laguna-show",
@@ -90,10 +115,15 @@
       "wheelId": "wheels-bbs-rs",
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "alpina",
-      "rideHeight": -0.25
+      "rideHeight": -0.25,
+      "environmentId": "showroom"
     },
     "totalCost": 7166,
-    "tags": ["show", "stance", "feature-car"]
+    "tags": [
+      "show",
+      "stance",
+      "feature-car"
+    ]
   },
   {
     "id": "build-malachite-resto",
@@ -106,10 +136,15 @@
       "wheelId": "wheels-ronal-lsi",
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "hartge",
-      "rideHeight": -0.04
+      "rideHeight": -0.04,
+      "environmentId": "pro-garage"
     },
     "totalCost": 3206,
-    "tags": ["restomod", "rare", "tasteful"]
+    "tags": [
+      "restomod",
+      "rare",
+      "tasteful"
+    ]
   },
   {
     "id": "build-sapphire-stealth",
@@ -122,10 +157,15 @@
       "wheelId": "wheels-mtech-bottle",
       "exhaustId": "exhaust-akrapovic",
       "stickerId": "none",
-      "rideHeight": -0.16
+      "rideHeight": -0.16,
+      "environmentId": "city-night"
     },
     "totalCost": 6325,
-    "tags": ["stealth", "blacked-out", "performance"]
+    "tags": [
+      "stealth",
+      "blacked-out",
+      "performance"
+    ]
   },
   {
     "id": "build-henna-classic",
@@ -138,10 +178,15 @@
       "wheelId": "wheels-ronal-lsi",
       "exhaustId": "exhaust-supersprint-single",
       "stickerId": "none",
-      "rideHeight": 0.02
+      "rideHeight": 0.02,
+      "environmentId": "showroom"
     },
     "totalCost": 3286,
-    "tags": ["classic", "stock-spec", "survivor"]
+    "tags": [
+      "classic",
+      "stock-spec",
+      "survivor"
+    ]
   },
   {
     "id": "build-dolphin-grand-tour",
@@ -154,9 +199,14 @@
       "wheelId": "wheels-borbet-a",
       "exhaustId": "exhaust-borla-dual",
       "stickerId": "alpina",
-      "rideHeight": -0.10
+      "rideHeight": -0.1,
+      "environmentId": "mountain-road"
     },
     "totalCost": 6436,
-    "tags": ["gt", "touring", "long-distance"]
+    "tags": [
+      "gt",
+      "touring",
+      "long-distance"
+    ]
   }
 ]

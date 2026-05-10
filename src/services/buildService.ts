@@ -12,6 +12,7 @@ export const DEFAULT_CONFIG: CarConfig = {
   exhaustId: 'exhaust-supersprint-single',
   stickerId: 'mtech',
   rideHeight: -0.1,
+  environmentId: 'pro-garage',
 };
 
 export function resolveConfig(config: CarConfig): SelectedPartsSummary {
@@ -52,7 +53,7 @@ export function encodeConfig(config: CarConfig): string {
 
 export function decodeConfig(encoded: string): CarConfig | null {
   try {
-    const parsed = JSON.parse(atob(encoded)) as CarConfig;
+    const parsed = JSON.parse(atob(encoded)) as Partial<CarConfig>;
     if (
       typeof parsed.paintId === 'string' &&
       typeof parsed.wheelId === 'string' &&
@@ -60,7 +61,12 @@ export function decodeConfig(encoded: string): CarConfig | null {
       typeof parsed.stickerId === 'string' &&
       typeof parsed.rideHeight === 'number'
     ) {
-      return parsed;
+      // environmentId was added later; tolerate older share links by
+      // falling back to the default.
+      return {
+        ...parsed,
+        environmentId: parsed.environmentId ?? DEFAULT_CONFIG.environmentId,
+      } as CarConfig;
     }
     return null;
   } catch {

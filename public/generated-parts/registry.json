@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "description": "Maps generated-part IDs to their renderable assets and mount points. The configurator part selector reads this to lazy-load custom parts on click. Empty by default; the admin page populates it when a generation is approved.",
+  "entries": []
+}

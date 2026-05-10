@@ -6,7 +6,7 @@ import {
   useReducer,
   type ReactNode,
 } from 'react';
-import type { CarConfig, StickerId } from '@/types';
+import type { CarConfig, EnvironmentId, StickerId } from '@/types';
 import { DEFAULT_CONFIG } from '@/services/buildService';
 
 /**
@@ -20,6 +20,7 @@ type Action =
   | { type: 'set-exhaust'; id: string }
   | { type: 'set-sticker'; id: StickerId }
   | { type: 'set-ride-height'; value: number }
+  | { type: 'set-environment'; id: EnvironmentId }
   | { type: 'load'; config: CarConfig }
   | { type: 'reset' };
 
@@ -35,6 +36,8 @@ function reducer(state: CarConfig, action: Action): CarConfig {
       return { ...state, stickerId: action.id };
     case 'set-ride-height':
       return { ...state, rideHeight: action.value };
+    case 'set-environment':
+      return { ...state, environmentId: action.id };
     case 'load':
       return { ...action.config };
     case 'reset':
@@ -51,6 +54,7 @@ interface ConfiguratorContextValue {
   setExhaust: (id: string) => void;
   setSticker: (id: StickerId) => void;
   setRideHeight: (value: number) => void;
+  setEnvironment: (id: EnvironmentId) => void;
   loadConfig: (config: CarConfig) => void;
   reset: () => void;
 }
@@ -76,8 +80,18 @@ export function ConfiguratorProvider({ children }: { children: ReactNode }) {
     (value: number) => dispatch({ type: 'set-ride-height', value }),
     [],
   );
+  const setEnvironment = useCallback(
+    (id: EnvironmentId) => dispatch({ type: 'set-environment', id }),
+    [],
+  );
   const loadConfig = useCallback(
-    (next: CarConfig) => dispatch({ type: 'load', config: next }),
+    (next: CarConfig) =>
+      // Fill in defaults for any field a partial config may be missing
+      // (older share links / gallery builds may predate newer fields).
+      dispatch({
+        type: 'load',
+        config: { ...DEFAULT_CONFIG, ...next },
+      }),
     [],
   );
   const reset = useCallback(() => dispatch({ type: 'reset' }), []);
@@ -90,10 +104,21 @@ export function ConfiguratorProvider({ children }: { children: ReactNode }) {
       setExhaust,
       setSticker,
       setRideHeight,
+      setEnvironment,
       loadConfig,
       reset,
     }),
-    [config, setPaint, setWheels, setExhaust, setSticker, setRideHeight, loadConfig, reset],
+    [
+      config,
+      setPaint,
+      setWheels,
+      setExhaust,
+      setSticker,
+      setRideHeight,
+      setEnvironment,
+      loadConfig,
+      reset,
+    ],
   );
 
   return (

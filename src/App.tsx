@@ -16,6 +16,10 @@ const ConfiguratorPage = lazy(() =>
     default: m.ConfiguratorPage,
   })),
 );
+// Admin pulls in three for the wheel preview — also lazy.
+const AdminPage = lazy(() =>
+  import('@/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
+);
 
 export function App() {
   return (
@@ -49,6 +53,7 @@ function Shell() {
           <Route path="/configure" element={<ConfiguratorPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/configure" replace />} />
         </Routes>
       </Suspense>

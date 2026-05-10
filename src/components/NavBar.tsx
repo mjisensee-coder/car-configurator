@@ -64,6 +64,16 @@ export function NavBar() {
             </>
           )}
         </NavLink>
+        <NavLink to="/admin" className={linkClass}>
+          {({ isActive }) => (
+            <>
+              Admin
+              {isActive && (
+                <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
+              )}
+            </>
+          )}
+        </NavLink>
       </nav>
 
       <div className="ml-auto flex items-center gap-3">

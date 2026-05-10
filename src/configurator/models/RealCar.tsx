@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { useGLTF } from '@react-three/drei';
 import {
   Box3,
@@ -12,8 +12,13 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js';
 import { Wheel } from '../parts/Wheel';
 import { ExhaustTip } from '../parts/ExhaustTip';
+import { RegistryWheel } from '../parts/RegistryWheel';
 import { buildStickerTexture } from '../parts/stickerTexture';
 import { getPartById } from '@/services/partsService';
+import {
+  getApprovedRegistryEntries,
+  subscribe as subscribeRegistry,
+} from '@/services/catalogSyncService';
 import type { CarConfig } from '@/types';
 
 /**
@@ -302,9 +307,10 @@ export function RealCar({ config }: RealCarProps) {
         <primitive object={cloned} />
       </group>
 
-      {/* Procedural wheels at the captured GLB anchor X/Z, fixed at ground-clearing Y */}
+      {/* Wheels — resolves to either a registry entry (AI-generated) or
+          the catalog Wheel based on the current wheelId. */}
       {setup.wheelAnchors.map((a, i) => (
-        <Wheel
+        <ResolvedWheel
           key={`wheel-${i}-${config.wheelId}`}
           position={[a.x, WHEEL_CENTER_Y, a.z]}
           wheelId={config.wheelId}
@@ -323,4 +329,30 @@ export function RealCar({ config }: RealCarProps) {
       />
     </>
   );
+}
+
+/**
+ * Wheel resolver — picks RegistryWheel for AI-generated entries and the
+ * catalog-driven <Wheel> otherwise. Subscribes to the catalog-sync store
+ * so an admin approval mid-session is reflected live.
+ */
+function ResolvedWheel({
+  position,
+  isRight,
+  wheelId,
+}: {
+  position: [number, number, number];
+  isRight: boolean;
+  wheelId: string;
+}) {
+  const approved = useSyncExternalStore(
+    (cb) => subscribeRegistry(cb),
+    () => getApprovedRegistryEntries(),
+    () => getApprovedRegistryEntries(),
+  );
+  const entry = approved.find((e) => e.id === wheelId);
+  if (entry) {
+    return <RegistryWheel entry={entry} position={position} isRight={isRight} />;
+  }
+  return <Wheel position={position} isRight={isRight} wheelId={wheelId} />;
 }

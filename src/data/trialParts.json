@@ -1,0 +1,42 @@
+[
+  {
+    "id": "trial-bbs-rs",
+    "category": "wheels",
+    "displayName": "BBS RS Two-Piece (Trial)",
+    "vendor": "ECS Tuning",
+    "vendorProductUrl": "https://www.ecstuning.com/Search/SiteSearch/bbs_rs/",
+    "imageUrl": "https://images.pexels.com/photos/19272394/pexels-photo-19272394.jpeg?auto=compress&cs=tinysrgb&w=800&q=80",
+    "imageAttribution": "Pexels (E30 with BBS-style mesh wheels)",
+    "notes": "ECS blocks WebFetch for direct CDN URLs; Pexels image used as a representative E30 mesh-wheel reference for the AI pipeline trial. Source product page is the ECS BBS RS search."
+  },
+  {
+    "id": "trial-apex-arc8",
+    "category": "wheels",
+    "displayName": "Apex ARC-8 (Trial)",
+    "vendor": "Bimmerworld / ECS Tuning",
+    "vendorProductUrl": "https://www.bimmerworld.com/Wheels-Tires/Wheels/APEX-ARC-8-17x8-ET25-4x100-Wheel.html",
+    "imageUrl": "https://images.pexels.com/photos/15098023/pexels-photo-15098023.jpeg?auto=compress&cs=tinysrgb&w=800&q=80",
+    "imageAttribution": "Pexels (E30 with split-spoke alloy wheels)",
+    "notes": "$328.99-$338.99 per wheel, 17x8 ET25 4x100. BBS/CSL-inspired split-spoke design. Bimmerworld blocks WebFetch; Pexels image is the closest available representative reference."
+  },
+  {
+    "id": "trial-supersprint-single",
+    "category": "exhaust",
+    "displayName": "Supersprint E30 325i Stainless Rear (Trial)",
+    "vendor": "IND Distribution",
+    "vendorProductUrl": "https://ind-distribution.com/products/supersprint-e30-325i-stainless-rear-exhaust",
+    "imageUrl": "https://ind-distribution.com/cdn/shop/files/782426-bmw-e30-320i-325ix-rear-exhaust-1-enhanced-sr_53317036721_o.jpg?v=1772073583&width=2048",
+    "imageAttribution": "IND Distribution (verified direct CDN)",
+    "notes": "$1,140. T304 stainless. Real product image from IND Distribution's Shopify CDN — only retailer that didn't block fetching."
+  },
+  {
+    "id": "trial-borla-dual",
+    "category": "exhaust",
+    "displayName": "Borla S-Type Dual (Trial)",
+    "vendor": "Turner Motorsport",
+    "vendorProductUrl": "https://www.turnermotorsport.com/c-1-exhaust",
+    "imageUrl": "https://images.pexels.com/photos/27993139/pexels-photo-27993139.jpeg?auto=compress&cs=tinysrgb&w=800&q=80",
+    "imageAttribution": "Pexels (E30 dual-tip rear)",
+    "notes": "Turner blocks WebFetch; Pexels image of a dual-tip E30 used as a representative reference for the trial."
+  }
+]

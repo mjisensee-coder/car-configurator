@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import type { PartCategory, StickerId } from '@/types';
 import { useConfigurator } from './ConfiguratorContext';
 import { getPartsByCategory, getPartById } from '@/services/partsService';
 import { getDefaultSuspensionForRideHeight } from '@/services/buildService';
+import {
+  getApprovedRegistryEntries,
+  subscribe as subscribeRegistry,
+} from '@/services/catalogSyncService';
 import { BuyPartCard } from './BuyPartCard';
 import { PhotoMatcher } from './parts/PhotoMatcher';
 
@@ -100,8 +104,53 @@ function WheelsPanel() {
   const wheels = getPartsByCategory('wheels');
   const selected = getPartById(config.wheelId);
 
+  // Pick up any wheel entries the admin has approved during this session.
+  const approved = useSyncExternalStore(
+    (cb) => subscribeRegistry(cb),
+    () => getApprovedRegistryEntries().filter((e) => e.category === 'wheels'),
+    () => getApprovedRegistryEntries().filter((e) => e.category === 'wheels'),
+  );
+
   return (
     <div className="space-y-4">
+      {approved.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-accent-gold mb-2">
+            AI-Generated (this session)
+          </p>
+          <div className="grid grid-cols-1 gap-2.5">
+            {approved.map((e) => {
+              const isActive = e.id === config.wheelId;
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => setWheels(e.id)}
+                  className={`text-left p-3 rounded-xl border transition-all flex items-center gap-3 ${
+                    isActive
+                      ? 'border-accent bg-accent/5'
+                      : 'border-garage-600 hover:border-garage-400 bg-garage-800/40'
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-garage-600 flex-shrink-0 bg-gradient-to-br from-accent-gold/30 to-accent/20 flex items-center justify-center text-accent-gold text-xs font-bold">
+                    AI
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm truncate">
+                      {e.displayName}
+                    </div>
+                    <div className="text-xs text-garage-400">
+                      Generated · {e.kind}
+                    </div>
+                  </div>
+                  {isActive && (
+                    <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-2.5">
         {wheels.map((w) => {
           const isActive = w.id === config.wheelId;

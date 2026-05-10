@@ -39,6 +39,12 @@ export type WheelStyle = 'bbs-rs' | 'ronal-lsi' | 'mtech-bottle';
 export type ExhaustStyle = 'single-tip' | 'dual-tip' | 'megaphone';
 export type StickerId = 'none' | 'mtech' | 'alpina' | 'hartge' | 'is-it-stance';
 
+export type EnvironmentId =
+  | 'pro-garage'
+  | 'showroom'
+  | 'mountain-road'
+  | 'city-night';
+
 export interface CarConfig {
   paintId: string;
   wheelId: string;
@@ -46,6 +52,8 @@ export interface CarConfig {
   stickerId: StickerId;
   /** Ride height offset from default, in scene units. Negative = lowered. */
   rideHeight: number;
+  /** Showroom environment for the 3D scene. */
+  environmentId: EnvironmentId;
 }
 
 export interface CommunityBuild {

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Scene } from './Scene';
 import { Sidebar } from './Sidebar';
 import { SummaryPanel } from './SummaryPanel';
+import { EnvironmentSelector } from './environments/EnvironmentSelector';
 import { useConfigurator } from './ConfiguratorContext';
 import { decodeConfig } from '@/services/buildService';
 
@@ -28,6 +29,7 @@ export function ConfiguratorPage() {
       <div id="configurator-canvas" className="flex-1 relative">
         <Scene />
         <SceneOverlay />
+        <EnvironmentSelector />
         <SummaryPanel />
 
         {/* Mobile: floating "Configure" button */}
