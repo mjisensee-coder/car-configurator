@@ -28,7 +28,7 @@ export function Scene({ canvasId }: SceneProps) {
       id={canvasId}
       shadows
       gl={{ preserveDrawingBuffer: true, antialias: true }}
-      camera={{ position: [5.5, 2.4, 6.5], fov: 38 }}
+      camera={{ position: [5.5, 1.7, 6.5], fov: 38 }}
       dpr={[1, 2]}
     >
       <Suspense
@@ -57,9 +57,13 @@ export function Scene({ canvasId }: SceneProps) {
         dampingFactor={0.1}
         minDistance={4}
         maxDistance={14}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2.05}
-        target={[0, 0.7, 0]}
+        // Constrain vertical orbit so the camera can't dip below the
+        // horizon line (which would expose the seam between contact
+        // shadow / reflection disc and the ground-projected HDRI) and
+        // can't look straight down.
+        minPolarAngle={Math.PI / 4}
+        maxPolarAngle={Math.PI / 2.15}
+        target={[0, 0.6, 0]}
       />
     </Canvas>
   );

@@ -30,20 +30,45 @@ export interface LightSpec {
 }
 
 /**
- * Floor mode determines how the ground plane is rendered.
- *   - "reflector": uses drei's <MeshReflectorMaterial> (real-time mirror
- *     reflections). Right for glossy floors — showroom, wet asphalt.
- *   - "standard": flat PBR material (rough surfaces — concrete, asphalt).
+ * Floor reflection overlay — only used for glossy environments where we
+ * want real-time car reflections in addition to the HDRI ground projection.
+ *
+ * The car sits on the ground-projected HDRI itself (drei's
+ * `<Environment ground={...}>` re-projects the panorama's lower hemisphere
+ * onto a virtual flat ground). The reflection overlay is an OPTIONAL second
+ * layer painted on top of that — semi-transparent so the projected ground
+ * still shows through, with a small radius so its edge can't reach the
+ * HDRI horizon line.
  */
-export interface FloorSpec {
-  mode: 'reflector' | 'standard';
+export interface ReflectionOverlay {
+  /** 0-1 mix toward the mirror (higher = stronger car-in-floor reflection). */
+  mirrorMix: number;
+  /** Blur radius of the reflection. Lower = sharper. */
+  blurAmount: number;
+  /** Tint color for the reflection (multiplied with the mirror). */
   color: string;
-  metalness: number;
-  roughness: number;
-  /** reflector mode only: 0-1 mix of mirror vs. base color. */
-  mirrorMix?: number;
-  /** reflector mode only: blur radius of the reflection. Lower = sharper. */
-  blurAmount?: number;
+  /** 0-1 opacity of the overlay layer. */
+  opacity: number;
+  /** Radius of the overlay disc — keep small so the edge stays under the car. */
+  radius: number;
+}
+
+/**
+ * Ground-projected HDRI parameters, fed to drei's `<Environment ground>`.
+ * These values re-project the HDRI's lower half onto a flat virtual ground,
+ * so the car visually sits ON the panorama floor instead of on a seam.
+ *
+ * Tuning per HDRI:
+ *   - height: where the camera is above the projected ground (m). Should
+ *             roughly match the eye-height of the original photographer.
+ *   - radius: where the ground starts to curve back up into the sky.
+ *             Larger = flatter ground extending further.
+ *   - scale:  overall HDRI sphere scale. Larger = horizon further out.
+ */
+export interface GroundProjection {
+  height: number;
+  radius: number;
+  scale: number;
 }
 
 export interface EnvironmentPreset {
@@ -54,11 +79,14 @@ export interface EnvironmentPreset {
   hdriUrl: string;
   /** Tonemapped JPEG/PNG preview of the HDRI for the selector thumbnail. */
   thumbnailUrl: string;
+  /** Ground-projection parameters tuned to this HDRI's perspective. */
+  ground: GroundProjection;
+  /** Optional reflection overlay for glossy environments. null = no overlay. */
+  reflectionOverlay: ReflectionOverlay | null;
   /** Optional fog tinting near-distance scene geometry (NOT the HDRI). */
   fog: { color: string; near: number; far: number } | null;
   ambientIntensity: number;
   lights: LightSpec[];
-  floor: FloorSpec;
   contactShadow: {
     opacity: number;
     blur: number;
@@ -76,6 +104,16 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Real workshop, daylight + warm metal',
     hdriUrl: '/environments/machine_shop_02_2k.hdr',
     thumbnailUrl: PH_PREVIEW('machine_shop_02'),
+    // Indoor scene — photographer's eye height ~1.7m, walls close-by, so
+    // smaller scale keeps the workshop walls/ceiling at a believable distance.
+    ground: { height: 8, radius: 80, scale: 100 },
+    reflectionOverlay: {
+      mirrorMix: 0.4,
+      blurAmount: 200,
+      color: '#1c1c20',
+      opacity: 0.4,
+      radius: 8,
+    },
     fog: null,
     ambientIntensity: 0.18,
     lights: [
@@ -83,7 +121,7 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
         type: 'spot',
         position: [4, 7, 4],
         color: '#ffe7c8',
-        intensity: 1.6,
+        intensity: 1.4,
         angle: 0.5,
         penumbra: 0.7,
         castShadow: true,
@@ -92,20 +130,12 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
         type: 'spot',
         position: [-5, 5, -3],
         color: '#ffd9b3',
-        intensity: 1.1,
+        intensity: 0.9,
         angle: 0.55,
         penumbra: 0.8,
       },
     ],
-    floor: {
-      mode: 'reflector',
-      color: '#1c1c20',
-      metalness: 0.4,
-      roughness: 0.7,
-      mirrorMix: 0.35,
-      blurAmount: 220,
-    },
-    contactShadow: { opacity: 0.65, blur: 2.4, color: '#000000' },
+    contactShadow: { opacity: 0.7, blur: 2.4, color: '#000000' },
   },
   showroom: {
     id: 'showroom',
@@ -113,31 +143,32 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Bright softbox studio',
     hdriUrl: '/environments/studio_small_09_2k.hdr',
     thumbnailUrl: PH_PREVIEW('studio_small_09'),
+    // Studio cyc is close-by — keep ground projection tight.
+    ground: { height: 6, radius: 60, scale: 80 },
+    reflectionOverlay: {
+      mirrorMix: 0.6,
+      blurAmount: 100,
+      color: '#e7e7ec',
+      opacity: 0.5,
+      radius: 7,
+    },
     fog: null,
-    ambientIntensity: 0.35,
+    ambientIntensity: 0.3,
     lights: [
       {
         type: 'directional',
         position: [4, 10, 6],
         color: '#ffffff',
-        intensity: 1.2,
+        intensity: 1.0,
         castShadow: true,
       },
       {
         type: 'directional',
         position: [-6, 8, -4],
         color: '#eef3ff',
-        intensity: 0.8,
+        intensity: 0.6,
       },
     ],
-    floor: {
-      mode: 'reflector',
-      color: '#e7e7ec',
-      metalness: 0.4,
-      roughness: 0.4,
-      mirrorMix: 0.7,
-      blurAmount: 120,
-    },
     contactShadow: { opacity: 0.45, blur: 2.6, color: '#0a0a14' },
   },
   'mountain-road': {
@@ -146,29 +177,27 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Drakensberg vista + asphalt',
     hdriUrl: '/environments/drakensberg_solitary_mountain_2k.hdr',
     thumbnailUrl: PH_PREVIEW('drakensberg_solitary_mountain'),
+    // Outdoor wide-open — bigger ground radius and scale so the mountains
+    // sit at a believable distance.
+    ground: { height: 20, radius: 250, scale: 1000 },
+    reflectionOverlay: null,
     fog: null,
-    ambientIntensity: 0.25,
+    ambientIntensity: 0.2,
     lights: [
       {
         type: 'directional',
         position: [12, 14, 8],
         color: '#fff6dc',
-        intensity: 2.0,
+        intensity: 1.8,
         castShadow: true,
       },
       {
         type: 'directional',
         position: [-8, 4, -6],
         color: '#a3c0e0',
-        intensity: 0.5,
+        intensity: 0.4,
       },
     ],
-    floor: {
-      mode: 'standard',
-      color: '#2a2c2f',
-      metalness: 0.1,
-      roughness: 0.95,
-    },
     contactShadow: { opacity: 0.6, blur: 2.0, color: '#000000' },
   },
   'city-night': {
@@ -177,14 +206,23 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Neon skyline, wet asphalt',
     hdriUrl: '/environments/shanghai_bund_2k.hdr',
     thumbnailUrl: PH_PREVIEW('shanghai_bund'),
-    fog: { color: '#0a0a18', near: 14, far: 30 },
+    // Riverside esplanade — buildings are far across the river.
+    ground: { height: 15, radius: 200, scale: 800 },
+    reflectionOverlay: {
+      mirrorMix: 0.85,
+      blurAmount: 50,
+      color: '#070710',
+      opacity: 0.6,
+      radius: 9,
+    },
+    fog: { color: '#0a0a18', near: 18, far: 35 },
     ambientIntensity: 0.12,
     lights: [
       {
         type: 'spot',
         position: [5, 7, 4],
         color: '#7ddfff',
-        intensity: 2.0,
+        intensity: 1.8,
         angle: 0.5,
         penumbra: 0.7,
         castShadow: true,
@@ -193,21 +231,13 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
         type: 'spot',
         position: [-5, 6, -3],
         color: '#ff5db1',
-        intensity: 1.5,
+        intensity: 1.3,
         angle: 0.55,
         penumbra: 0.75,
       },
       { type: 'point', position: [0, 0.4, 4], color: '#3aa0ff', intensity: 0.5 },
       { type: 'point', position: [0, 0.4, -4], color: '#ff3a8e', intensity: 0.5 },
     ],
-    floor: {
-      mode: 'reflector',
-      color: '#070710',
-      metalness: 1.0,
-      roughness: 0.1,
-      mirrorMix: 0.85,
-      blurAmount: 60,
-    },
     contactShadow: { opacity: 0.85, blur: 1.6, color: '#040414' },
   },
 };
