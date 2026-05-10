@@ -7,7 +7,6 @@ import { RealCar } from './models/RealCar';
 // import { PlaceholderCar } from './models/PlaceholderCar';
 import { useConfigurator } from './ConfiguratorContext';
 import { SceneEnvironment } from './environments/SceneEnvironment';
-import { getEnvironmentPreset } from './environments/environmentPresets';
 
 interface SceneProps {
   /** Forwarded to the Canvas — used by html2canvas screenshots. */
@@ -15,13 +14,17 @@ interface SceneProps {
 }
 
 /**
- * The 3D garage scene. The environment block (HDRI, lights, floor, contact
- * shadows) is fully driven by the active EnvironmentPreset, so swapping
- * presets swaps the scene's mood without touching the car or controls.
+ * The 3D scene shell — Canvas, camera, orbit controls. The environment
+ * block (room geometry, lights, floor, contact shadows) is driven by the
+ * active environment id; the car is a sibling that reads the config.
+ *
+ * Polar-angle constraints keep the camera from rising above the room
+ * ceilings of indoor environments — looking down past the horizon would
+ * expose the gap between geometry and background. The most-restrictive
+ * setting (~57° below straight up) covers all 4 environments.
  */
 export function Scene({ canvasId }: SceneProps) {
   const { config } = useConfigurator();
-  const preset = getEnvironmentPreset(config.environmentId);
 
   return (
     <Canvas
@@ -38,7 +41,7 @@ export function Scene({ canvasId }: SceneProps) {
           </Html>
         }
       >
-        <SceneEnvironment preset={preset} />
+        <SceneEnvironment id={config.environmentId} />
       </Suspense>
 
       <Suspense
@@ -57,11 +60,7 @@ export function Scene({ canvasId }: SceneProps) {
         dampingFactor={0.1}
         minDistance={4}
         maxDistance={14}
-        // Constrain vertical orbit so the camera can't dip below the
-        // horizon line (which would expose the seam between contact
-        // shadow / reflection disc and the ground-projected HDRI) and
-        // can't look straight down.
-        minPolarAngle={Math.PI / 4}
+        minPolarAngle={1.0}
         maxPolarAngle={Math.PI / 2.15}
         target={[0, 0.6, 0]}
       />

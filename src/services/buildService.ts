@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG: CarConfig = {
   exhaustId: 'exhaust-supersprint-single',
   stickerId: 'mtech',
   rideHeight: -0.1,
-  environmentId: 'pro-garage',
+  environmentId: 'showroom',
 };
 
 export function resolveConfig(config: CarConfig): SelectedPartsSummary {
