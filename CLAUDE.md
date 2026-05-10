@@ -67,9 +67,10 @@ import JSON anywhere.
 
 ### 3. 3D Model (`src/configurator/models/`)
 
-The configurator scene mounts a single car component that consumes
-the current `CarConfig` from context. Today that's `<PlaceholderCar />`
-which builds the car from Three.js primitives.
+The configurator scene mounts a single car component that consumes the
+current `CarConfig` from context. The default is `<RealCar />` which loads
+**"BMW M3 E30" by Artem P** from Sketchfab (CC BY 4.0, attributed in the
+footer + scene overlay).
 
 **The contract** (see `models/types.ts`) is conceptual: whatever model
 you mount must respect the config's:
@@ -80,16 +81,36 @@ you mount must respect the config's:
 - `stickerId` → side decal reflects the chosen sticker
 - `rideHeight` → body Y-offset
 
-**To swap to a real GLB:**
+**RealCar implementation notes:**
 
-1. Drop `e30.glb` into `/public/models/`.
-2. Create `RealCar.tsx` next to `PlaceholderCar.tsx` that uses
-   `useGLTF('/models/e30.glb')` and exposes named children (`body`,
-   `wheel_FL`, `wheel_FR`, `wheel_RL`, `wheel_RR`, `exhaust_tip`).
-3. Mutate `body.material.color` and swap meshes by `name` rather than
-   re-creating geometry.
-4. Replace the import in `Scene.tsx`: `<PlaceholderCar config={config} />`
-   becomes `<RealCar config={config} />`.
+- Loads `/public/models/e30/scene.gltf` (multi-file glTF, ~27MB total).
+- Hides the GLB's wheels, brake discs, axles, suspension, and exhaust;
+  captures the wheel-hub world positions before hiding so our procedural
+  `<Wheel>` components anchor at the same X/Z. This keeps the wheel-style
+  swap UX wired to real geometry choices.
+- Recolors the shared `body` material in place (one mutation recolors all
+  24 body panels). The material is *cloned* on first mount so the drei
+  GLB cache isn't permanently mutated.
+- Auto-scales by bounding box to a 4.32m target length, so model-unit
+  variations don't require manual tweaking.
+- Side decals (`<BodyDecal>`) are deliberately *not* applied on the real
+  car: flat planes don't conform to curved doors. v2 work: use
+  `THREE.DecalGeometry` projected onto the side panel meshes.
+
+**Fallback:** `PlaceholderCar.tsx` remains in the repo and works
+standalone — useful while iterating offline or for capturing a
+deterministic non-textured screenshot. To use it, swap the import in
+`Scene.tsx`.
+
+**To swap to a different GLB:**
+
+1. Drop the new model into `/public/models/<name>/`.
+2. Update `MODEL_URL` in `RealCar.tsx`.
+3. Adjust `HIDDEN_GROUPS` and `WHEEL_ANCHOR` regexes to match the new
+   model's node names. Use `python3 /tmp/inspect_gltf.py` (or `npx
+   gltfjsx`) to discover them.
+4. Update the footer + scene-overlay attribution to match the new
+   author + license.
 
 The sidebar, summary panel, and routing are untouched.
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { searchParts, CATEGORIES, type SortKey } from '@/services/partsService';
 import type { Part, PartCategory } from '@/types';
 import { E30 } from '@/data/imageLibrary';
+import { Footer } from '@/components/Footer';
 
 export function CatalogPage() {
   const [category, setCategory] = useState<PartCategory | 'all'>('all');
@@ -120,6 +121,8 @@ export function CatalogPage() {
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

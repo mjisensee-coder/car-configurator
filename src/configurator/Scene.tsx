@@ -6,7 +6,10 @@ import {
   Html,
 } from '@react-three/drei';
 import { Suspense } from 'react';
-import { PlaceholderCar } from './models/PlaceholderCar';
+import { RealCar } from './models/RealCar';
+// PlaceholderCar is retained as a documented fallback. Swap the import below
+// to fall back to it (e.g. while iterating offline without the GLB).
+// import { PlaceholderCar } from './models/PlaceholderCar';
 import { useConfigurator } from './ConfiguratorContext';
 
 interface SceneProps {
@@ -72,7 +75,7 @@ export function Scene({ canvasId }: SceneProps) {
           </Html>
         }
       >
-        <PlaceholderCar config={config} />
+        <RealCar config={config} />
       </Suspense>
 
       {/* === Floor === */}

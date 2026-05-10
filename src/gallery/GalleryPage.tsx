@@ -4,6 +4,7 @@ import { getAllBuilds } from '@/services/galleryService';
 import { useConfigurator } from '@/configurator/ConfiguratorContext';
 import type { CommunityBuild } from '@/types';
 import { E30 } from '@/data/imageLibrary';
+import { Footer } from '@/components/Footer';
 
 export function GalleryPage() {
   const allBuilds = getAllBuilds();
@@ -111,6 +112,8 @@ export function GalleryPage() {
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

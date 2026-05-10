@@ -100,6 +100,36 @@ function SceneOverlay() {
       <div className="hidden md:block absolute bottom-4 right-4 text-xs text-garage-500 font-mono">
         Drag to rotate · Scroll to zoom
       </div>
+      {/* CC BY 4.0 attribution — required by the model license */}
+      <div className="hidden md:block absolute top-4 right-4 text-[10px] text-garage-500 pointer-events-auto">
+        Model:{' '}
+        <a
+          href="https://sketchfab.com/3d-models/bmw-m3-e30-6d67d12a2abe4e119842f65e46fa2f67"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-garage-300 underline-offset-2 hover:underline transition-colors"
+        >
+          BMW M3 E30
+        </a>{' '}
+        ·{' '}
+        <a
+          href="https://sketchfab.com/temp0.crazy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-garage-300 underline-offset-2 hover:underline transition-colors"
+        >
+          Artem P
+        </a>{' '}
+        ·{' '}
+        <a
+          href="https://creativecommons.org/licenses/by/4.0/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-garage-300 underline-offset-2 hover:underline transition-colors"
+        >
+          CC BY 4.0
+        </a>
+      </div>
     </div>
   );
 }

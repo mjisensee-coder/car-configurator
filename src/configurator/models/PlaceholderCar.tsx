@@ -9,13 +9,16 @@ import { getPartById } from '@/services/partsService';
 /**
  * Placeholder BMW E30 built from Three.js primitives.
  *
- * The shape is deliberately recognizable but not photographic — the goal is
- * to demonstrate the part-swap architecture. Drop a real GLB into this slot
- * by replacing the JSX with a useGLTF()-backed component that exposes the
- * same swap points: body color, wheels[0..3], exhaust, decals.
+ * STATUS: fallback / not currently mounted. `Scene.tsx` mounts `RealCar`
+ * (the GLB-backed implementation) by default. Swap the imports there if you
+ * need the procedural model — useful while iterating offline without the
+ * 27MB GLB asset, or for capturing a deterministic non-textured screenshot.
  *
- * Coordinate convention: car points down +Z, +X is the right side, +Y is up.
- * The wheelbase is centered at the origin; the body floats above by `bodyY`.
+ * The shape is deliberately recognizable but not photographic — the goal was
+ * always to demonstrate the part-swap architecture, which is now live in
+ * RealCar. Coordinate convention: car points down +Z, +X is the right side,
+ * +Y is up. The wheelbase is centered at the origin; the body floats above
+ * by `bodyY`.
  */
 
 interface PlaceholderCarProps {
