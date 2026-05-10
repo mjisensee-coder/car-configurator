@@ -104,16 +104,12 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Real workshop, daylight + warm metal',
     hdriUrl: '/environments/machine_shop_02_2k.hdr',
     thumbnailUrl: PH_PREVIEW('machine_shop_02'),
-    // Indoor scene — photographer's eye height ~1.7m, walls close-by, so
-    // smaller scale keeps the workshop walls/ceiling at a believable distance.
-    ground: { height: 8, radius: 80, scale: 100 },
-    reflectionOverlay: {
-      mirrorMix: 0.4,
-      blurAmount: 200,
-      color: '#1c1c20',
-      opacity: 0.4,
-      radius: 8,
-    },
+    // Indoor workshop — walls should feel close (~6-12m).
+    // Lower height so the eye-level matches the photographer's tripod;
+    // smaller scale brings the workshop walls in around the car.
+    ground: { height: 4, radius: 30, scale: 50 },
+    // Dry concrete workshop floor — NOT reflective.
+    reflectionOverlay: null,
     fog: null,
     ambientIntensity: 0.18,
     lights: [
@@ -143,13 +139,15 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Bright softbox studio',
     hdriUrl: '/environments/studio_small_09_2k.hdr',
     thumbnailUrl: PH_PREVIEW('studio_small_09'),
-    // Studio cyc is close-by — keep ground projection tight.
-    ground: { height: 6, radius: 60, scale: 80 },
+    // Studio cyc is close — tight ground projection.
+    ground: { height: 3, radius: 25, scale: 40 },
+    // Polished showroom floor — JUST a hint of reflection. The HDRI
+    // ground is already polished concrete; this adds car-in-floor faintly.
     reflectionOverlay: {
-      mirrorMix: 0.6,
-      blurAmount: 100,
+      mirrorMix: 0.2,
+      blurAmount: 180,
       color: '#e7e7ec',
-      opacity: 0.5,
+      opacity: 0.15,
       radius: 7,
     },
     fog: null,
@@ -177,9 +175,9 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Drakensberg vista + asphalt',
     hdriUrl: '/environments/drakensberg_solitary_mountain_2k.hdr',
     thumbnailUrl: PH_PREVIEW('drakensberg_solitary_mountain'),
-    // Outdoor wide-open — bigger ground radius and scale so the mountains
-    // sit at a believable distance.
-    ground: { height: 20, radius: 250, scale: 1000 },
+    // Outdoor wide-open — mountains should feel hundreds of meters away.
+    ground: { height: 12, radius: 400, scale: 2000 },
+    // Dry asphalt — NOT reflective.
     reflectionOverlay: null,
     fog: null,
     ambientIntensity: 0.2,
@@ -206,13 +204,15 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     vibe: 'Neon skyline, wet asphalt',
     hdriUrl: '/environments/shanghai_bund_2k.hdr',
     thumbnailUrl: PH_PREVIEW('shanghai_bund'),
-    // Riverside esplanade — buildings are far across the river.
-    ground: { height: 15, radius: 200, scale: 800 },
+    // Riverside — buildings across the river ~100-200m, river/sky beyond.
+    ground: { height: 8, radius: 150, scale: 600 },
+    // Wet asphalt: visibly mirrored but heavily blurred so it reads as
+    // a wet road, not a polished mirror or a still puddle.
     reflectionOverlay: {
-      mirrorMix: 0.85,
-      blurAmount: 50,
+      mirrorMix: 0.5,
+      blurAmount: 220,
       color: '#070710',
-      opacity: 0.6,
+      opacity: 0.5,
       radius: 9,
     },
     fog: { color: '#0a0a18', near: 18, far: 35 },
