@@ -4,7 +4,7 @@
     "name": "Alpine White Track Build",
     "creator": "@hahnsler",
     "description": "Period-correct M3 Sport Evo tribute. BBS RS, M-Tech II, Bilstein PSS9. Built for canyon and track days.",
-    "screenshot": "https://images.unsplash.com/photo-1599256630072-2d6b3a4d8ce0?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/9545550/pexels-photo-9545550.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-alpine-white",
       "wheelId": "wheels-bbs-rs",
@@ -20,7 +20,7 @@
     "name": "Bronzit Beige Daily",
     "creator": "@vintagewerk",
     "description": "Survivor-grade restoration. Bronzit Beige metallic, Ronal LSI, mild H&R drop. The everyday classic.",
-    "screenshot": "https://images.unsplash.com/photo-1542362567-b07e54358753?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/18781177/pexels-photo-18781177.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-bronzit-beige",
       "wheelId": "wheels-ronal-lsi",
@@ -36,7 +36,7 @@
     "name": "M-Tech Widebody",
     "creator": "@haus-werks",
     "description": "Diamond Black on Borbets, Akrapovic titanium, KW V3. Modern aggression on classic bones.",
-    "screenshot": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/11110466/pexels-photo-11110466.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-diamond-black",
       "wheelId": "wheels-borbet-a",
@@ -52,7 +52,7 @@
     "name": "Drift Missile",
     "creator": "@e30hooligan",
     "description": "Cinnabar Red, M-Tech bottlecaps, GC Track coilovers, Magnaflow megaphone. Tear up the skidpad.",
-    "screenshot": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/16823797/pexels-photo-16823797.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-cinnabar-red",
       "wheelId": "wheels-mtech-bottle",
@@ -68,7 +68,7 @@
     "name": "Zinnoberrot Touring",
     "creator": "@bavarian-iron",
     "description": "Zinnoberrot M3 colorway, BBS RS, Borla dual exhaust, KW V3. Grand tourer setup.",
-    "screenshot": "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/19565328/pexels-photo-19565328.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-zinnoberrot",
       "wheelId": "wheels-bbs-rs",
@@ -84,7 +84,7 @@
     "name": "Laguna Seca Showcar",
     "creator": "@bimmer-studio",
     "description": "Show-stopping Laguna Seca Blue with Alpina decals, BBS RS, KW V3 slammed.",
-    "screenshot": "https://images.unsplash.com/photo-1485463611174-f302f6a5c1c9?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/36608247/pexels-photo-36608247.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-laguna-seca",
       "wheelId": "wheels-bbs-rs",
@@ -100,7 +100,7 @@
     "name": "Malachite Restomod",
     "creator": "@altwerk",
     "description": "Rare Malachite Green, Ronal LSI, H&R Sport springs. Gentleman's restomod.",
-    "screenshot": "https://images.unsplash.com/photo-1542367592-8849eb950fd8?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/18311087/pexels-photo-18311087.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-malachite-green",
       "wheelId": "wheels-ronal-lsi",
@@ -116,7 +116,7 @@
     "name": "Sapphire Stealth",
     "creator": "@nightshade-bmw",
     "description": "Sapphire Black on M-Tech bottlecaps, Akrapovic titanium, Bilstein PSS9. All-black stealth ops.",
-    "screenshot": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/12359723/pexels-photo-12359723.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-sapphire-black",
       "wheelId": "wheels-mtech-bottle",
@@ -132,7 +132,7 @@
     "name": "Henna Red Classic",
     "creator": "@e30purist",
     "description": "Survivor Henna Red, Ronal LSI, factory-spec H&R drop. Concours-ready.",
-    "screenshot": "https://images.unsplash.com/photo-1494905998402-395d579af36f?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/20227074/pexels-photo-20227074.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-henna-red",
       "wheelId": "wheels-ronal-lsi",
@@ -148,7 +148,7 @@
     "name": "Dolphin Grey GT",
     "creator": "@e30touring",
     "description": "Dolphin Grey metallic, Borbet Type A, Borla dual, KW V3. Cross-continent tourer.",
-    "screenshot": "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=900&q=80",
+    "screenshot": "https://images.pexels.com/photos/16737678/pexels-photo-16737678.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80",
     "config": {
       "paintId": "paint-dolphin-grey",
       "wheelId": "wheels-borbet-a",

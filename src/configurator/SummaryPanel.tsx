@@ -7,7 +7,9 @@ import type { Part } from '@/types';
 export function SummaryPanel() {
   const { config } = useConfigurator();
   const summary = resolveConfig(config);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() =>
+    typeof window === 'undefined' ? true : window.innerWidth >= 1024,
+  );
   const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   const items: { label: string; part: Part | undefined }[] = [
@@ -61,7 +63,7 @@ export function SummaryPanel() {
 
   return (
     <div
-      className={`fixed bottom-4 left-4 z-30 w-[360px] max-w-[calc(100vw-2rem)] bg-garage-900/95 backdrop-blur-xl border border-garage-700 rounded-2xl shadow-panel overflow-hidden transition-all`}
+      className={`fixed bottom-4 left-4 right-4 lg:right-auto z-30 lg:w-[360px] max-w-[calc(100vw-7rem)] lg:max-w-[calc(100vw-2rem)] bg-garage-900/95 backdrop-blur-xl border border-garage-700 rounded-2xl shadow-panel overflow-hidden transition-all`}
     >
       <button
         onClick={() => setOpen((v) => !v)}

@@ -43,3 +43,6 @@ pnpm-debug.log*
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Claude Code harness state
+.claude/
