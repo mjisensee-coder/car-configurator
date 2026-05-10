@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #0a0a0c;
+  color: #e7e7ec;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar — matches the dark garage aesthetic */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #16161d;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a44;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a66;
+}
+
+/* Range slider styling */
+input[type='range'] {
+  height: 4px;
+  border-radius: 2px;
+  background: #26262f;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e63946, #d4a657);
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(230, 57, 70, 0.5);
+  border: 2px solid #0a0a0c;
+}
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e63946, #d4a657);
+  cursor: pointer;
+  border: 2px solid #0a0a0c;
+}
+
+/* Keep R3F canvases sized to their container */
+canvas {
+  display: block;
+}
