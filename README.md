@@ -4,6 +4,9 @@ A premium 3D BMW E30 configurator. Spin the camera around your build,
 swap paint, wheels, exhaust, suspension, and decals in real time, and
 get a parts list with affiliate links to ECS Tuning and Turner Motorsport.
 
+🚗 **Live:** <https://web-production-92eeb.up.railway.app>
+📦 **Repo:** <https://github.com/mjisensee-coder/car-configurator>
+
 > **Status:** Polished proof-of-concept. The 3D model is built from
 > Three.js primitives — drop a real GLB in later (see
 > [CLAUDE.md](./CLAUDE.md) for the swap procedure).
