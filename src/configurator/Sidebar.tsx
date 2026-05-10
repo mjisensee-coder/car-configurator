@@ -4,6 +4,7 @@ import { useConfigurator } from './ConfiguratorContext';
 import { getPartsByCategory, getPartById } from '@/services/partsService';
 import { getDefaultSuspensionForRideHeight } from '@/services/buildService';
 import { BuyPartCard } from './BuyPartCard';
+import { PhotoMatcher } from './parts/PhotoMatcher';
 
 const TABS: { id: PartCategory; label: string }[] = [
   { id: 'paint', label: 'Paint' },
@@ -135,6 +136,7 @@ function WheelsPanel() {
           );
         })}
       </div>
+      <PhotoMatcher category="wheels" onSelect={setWheels} />
       {selected && <BuyPartCard part={selected} />}
     </div>
   );
@@ -171,6 +173,7 @@ function ExhaustPanel() {
           );
         })}
       </div>
+      <PhotoMatcher category="exhaust" onSelect={setExhaust} />
       {selected && <BuyPartCard part={selected} />}
     </div>
   );

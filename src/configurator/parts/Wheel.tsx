@@ -53,6 +53,10 @@ export function Wheel({ position, wheelId, isRight }: WheelProps) {
 
 /**
  * Mesh-style face with polished gold spokes & polished lip — BBS RS aesthetic.
+ *
+ * All rim components live in the local X-Y plane (facing +Z). The
+ * wheel-group's outer rotation then rotates that plane to face ±X for
+ * left/right wheels.
  */
 function BbsRsFace({ radius, spokes }: { radius: number; spokes: number }) {
   const arr = Array.from({ length: spokes });
@@ -63,8 +67,8 @@ function BbsRsFace({ radius, spokes }: { radius: number; spokes: number }) {
         <torusGeometry args={[radius * 1.05, 0.025, 12, 32]} />
         <meshStandardMaterial color="#dde2e8" metalness={1} roughness={0.05} />
       </mesh>
-      {/* Gold mesh face */}
-      <mesh>
+      {/* Gold mesh back-plate. Cylinder axis must align with +Z (rim normal). */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[radius, radius, 0.04, 32]} />
         <meshStandardMaterial color="#d4a657" metalness={0.85} roughness={0.25} />
       </mesh>
@@ -96,7 +100,7 @@ function RonalLsiFace({ radius }: { radius: number }) {
         <torusGeometry args={[radius * 1.05, 0.025, 12, 32]} />
         <meshStandardMaterial color="#dde2e8" metalness={1} roughness={0.08} />
       </mesh>
-      <mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[radius, radius, 0.04, 32]} />
         <meshStandardMaterial color="#aab2bc" metalness={0.85} roughness={0.2} />
       </mesh>
@@ -127,7 +131,7 @@ function MtechBottleFace({ radius }: { radius: number }) {
         <torusGeometry args={[radius * 1.05, 0.025, 12, 32]} />
         <meshStandardMaterial color="#aab2bc" metalness={0.95} roughness={0.15} />
       </mesh>
-      <mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[radius, radius, 0.04, 32]} />
         <meshStandardMaterial color="#c8ccd1" metalness={0.85} roughness={0.2} />
       </mesh>
@@ -136,12 +140,12 @@ function MtechBottleFace({ radius }: { radius: number }) {
         return (
           <mesh
             key={`mtech-${i}`}
-            rotation={[0, 0, angle]}
             position={[
               Math.cos(angle) * radius * 0.6,
               Math.sin(angle) * radius * 0.6,
-              0.01,
+              0.02,
             ]}
+            rotation={[Math.PI / 2, 0, 0]}
           >
             <cylinderGeometry args={[0.018, 0.018, 0.04, 8]} />
             <meshStandardMaterial color="#0a0a0c" metalness={0.6} roughness={0.4} />
