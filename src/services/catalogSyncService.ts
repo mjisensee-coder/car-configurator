@@ -122,8 +122,19 @@ function update(id: string, patch: Partial<QueueEntry>) {
 }
 
 /**
- * Run the right pipeline for a queue entry. Wheels go to Phase A,
- * everything else to Phase B (Tripo3D + billboard fallback).
+ * Run the right pipeline for a queue entry.
+ *
+ * Wheels:
+ *   Gemini analysis (Phase A) → ProceduralWheelSpec → procedural render.
+ *
+ * Exhaust:
+ *   Gemini analysis (Phase A) AND Tripo3D / billboard (Phase B) run
+ *   concurrently. The admin shows both:
+ *     - the Gemini analysis card (tipCount, material, etc) — always
+ *     - the 3D asset preview (GLB if Tripo3D is configured, otherwise
+ *       a billboard of the source image).
+ *   We don't fail the whole entry if one half errors out; we record
+ *   whatever we got.
  */
 export async function runGeneration(id: string): Promise<void> {
   const entry = queue.get(id);
@@ -151,10 +162,31 @@ export async function runGeneration(id: string): Promise<void> {
       return;
     }
 
-    // Phase B path (exhaust + future categories).
-    const result = await generate3DPart(base64, mimeType, entry.trial.category);
-    if (!result.ok) throw new Error(result.error);
-    update(id, { status: 'review', asset: result.asset });
+    // Exhaust: run analysis + 3D-asset in parallel. Both can fail
+    // independently — we still flip to 'review' as long as we got
+    // something useful.
+    const [analysisRes, assetRes] = await Promise.all([
+      generatePartFromPhoto(base64, mimeType, entry.trial.category),
+      generate3DPart(base64, mimeType, entry.trial.category),
+    ]);
+
+    const patch: Partial<QueueEntry> = { status: 'review' };
+    if (analysisRes.ok) patch.analysis = analysisRes.analysis;
+    if (assetRes.ok) patch.asset = assetRes.asset;
+
+    // If both halves errored, surface a combined error.
+    if (!analysisRes.ok && !assetRes.ok) {
+      throw new Error(
+        `Both Phase A and Phase B failed: analysis="${analysisRes.error}", asset="${assetRes.error}"`,
+      );
+    }
+    // If only one errored, record review with what we got — admin will
+    // see the analysis card (or asset) with the missing half noted as
+    // an inline error.
+    if (!analysisRes.ok) patch.error = `Analysis failed: ${analysisRes.error}`;
+    else if (!assetRes.ok) patch.error = `3D asset failed: ${assetRes.error}`;
+
+    update(id, patch);
   } catch (err) {
     update(id, {
       status: 'error',

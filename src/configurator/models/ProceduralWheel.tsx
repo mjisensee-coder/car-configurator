@@ -69,16 +69,29 @@ export function ProceduralWheel({ position, isRight, spec }: ProceduralWheelProp
         <meshStandardMaterial color="#16161a" roughness={0.9} />
       </mesh>
 
+      {/* Inner barrel — a slightly recessed cylinder behind the rim face.
+          Gives a hint of "depth" when the wheel is viewed at any angle. */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.05]}>
+        <cylinderGeometry args={[RIM_RADIUS * 0.92, RIM_RADIUS * 0.92, 0.14, 32]} />
+        <meshStandardMaterial color="#1a1a1f" roughness={0.7} metalness={0.6} />
+      </mesh>
+
       {/* Rim face */}
       <group position={[0, 0, 0.115]}>
-        {/* Polished outer lip (always present, gives wheels their depth) */}
-        <mesh>
-          <torusGeometry args={[RIM_RADIUS * 1.05, 0.025, 12, 32]} />
-          <meshStandardMaterial
-            color={accentLip(spec.finish)}
-            metalness={1}
-            roughness={0.05}
-          />
+        {/* Stepped outer lip — three rings of decreasing radius for the
+            classic BBS-RS "split lip" look. Always present (even on dish
+            and turbine styles) since real alloy wheels have lip depth. */}
+        <mesh position={[0, 0, 0.005]}>
+          <torusGeometry args={[RIM_RADIUS * 1.06, 0.022, 12, 48]} />
+          <meshStandardMaterial color={accentLip(spec.finish)} metalness={1} roughness={0.04} />
+        </mesh>
+        <mesh position={[0, 0, -0.012]}>
+          <torusGeometry args={[RIM_RADIUS * 1.04, 0.018, 12, 48]} />
+          <meshStandardMaterial color={accentLip(spec.finish)} metalness={1} roughness={0.08} />
+        </mesh>
+        <mesh position={[0, 0, -0.028]}>
+          <torusGeometry args={[RIM_RADIUS * 1.02, 0.014, 12, 48]} />
+          <meshStandardMaterial color="#777a82" metalness={0.85} roughness={0.18} />
         </mesh>
 
         {/* Back-plate disc (filled rim color) */}
@@ -100,10 +113,31 @@ export function ProceduralWheel({ position, isRight, spec }: ProceduralWheelProp
           finish={finish}
         />
 
-        {/* Center cap */}
-        <mesh position={[0, 0, 0.005]}>
-          <cylinderGeometry args={[0.045, 0.045, 0.02, 16]} />
-          <meshStandardMaterial color="#0a4d8a" metalness={0.6} roughness={0.4} />
+        {/* Five lug bolts arranged around the center cap (5x100 / 5x120
+            convention — standard for the BMW chassis we render). */}
+        {Array.from({ length: 5 }).map((_, i) => {
+          const angle = (i / 5) * Math.PI * 2;
+          const r = 0.075;
+          return (
+            <mesh
+              key={`lug-${i}`}
+              position={[Math.cos(angle) * r, Math.sin(angle) * r, 0.018]}
+              rotation={[Math.PI / 2, 0, 0]}
+            >
+              <cylinderGeometry args={[0.011, 0.011, 0.012, 8]} />
+              <meshStandardMaterial color="#15161a" metalness={0.7} roughness={0.45} />
+            </mesh>
+          );
+        })}
+
+        {/* Center cap with embossed-ring detail */}
+        <mesh position={[0, 0, 0.022]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.048, 0.048, 0.012, 24]} />
+          <meshStandardMaterial color="#0a4d8a" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0, 0.029]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.05, 0.005, 8, 24]} />
+          <meshStandardMaterial color="#dde2e8" metalness={1} roughness={0.1} />
         </mesh>
       </group>
     </group>

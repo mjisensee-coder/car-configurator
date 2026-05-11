@@ -158,35 +158,78 @@ app.post('/api/match-part', async (req, res) => {
 });
 
 // ===================================================================
-// /api/generate-part  — Phase A of the parts pipeline. Returns a wheel
-//                       spec the client can plug straight into
-//                       ProceduralWheel without further interpretation.
+// /api/generate-part  — Phase A of the parts pipeline.
+//
+// For "wheels": returns a wheel spec the client plugs straight into
+// ProceduralWheel without further interpretation.
+//
+// For "exhaust": returns a structural analysis the admin can show
+// alongside the (Tripo3D or billboard) 3D asset, so the operator sees
+// what the AI actually understood about the tip — even when Tripo3D
+// isn't configured and Phase B falls back to a 2.5D billboard.
 // ===================================================================
 
-const GENERATE_PROMPT_WHEELS = `You are an expert wheel-style classifier feeding a parametric 3D wheel generator.
+const GENERATE_PROMPT_WHEELS = `You are an expert wheel-style classifier feeding a parametric 3D wheel generator. The 3D generator does NOT see the image — it only sees your JSON output. Your job is to translate the image into the JSON below as accurately as possible, even if the photo is imperfect.
 
-Given this image of an automotive wheel/rim, return ONLY a single JSON object:
+INTERPRETATION RULES:
+- If the wheel is shown at an angle (3/4 view, side angle, mounted on a car), MENTALLY ROTATE it to a front-face view and describe what the front face would look like.
+- Count *visible* spokes, then estimate the total. A 3/4 view typically hides ~30% of the spokes — extrapolate to a full circle.
+- For mesh wheels: count *visible mesh struts* (typically 10–20 thin spokes crossing).
+- Ignore brake calipers, tires, fenders — focus only on the rim face.
+- If multiple rim styles appear (e.g. side-by-side product shots), describe only the most prominent.
+
+Return ONLY a single JSON object (no prose, no markdown):
 - "spokeStyle": one of "thin-spoke" | "thick-spoke" | "split-spoke" | "mesh" | "multi-spoke" | "dish" | "turbine"
-- "spokeCount": integer number of major spokes/visual divisions (1 for "dish")
-- "diameterInches": estimated diameter as number, 14-19 typical
-- "widthInches": estimated width 6.5-12 typical
-- "color": hex color of the rim face, e.g. "#d4a657" for gold, "#c8ccd1" for silver, "#0a0a0c" for black
-- "brandGuess": brand string if recognizable, otherwise null
+    - thin-spoke   = 4–8 narrow straight spokes
+    - thick-spoke  = 4–6 chunky wide spokes
+    - split-spoke  = 4–6 Y-shaped (one spoke splits into two near the lip) — Apex ARC-8 style
+    - mesh         = 10–20 thin spokes forming a mesh/basket — BBS RS style
+    - multi-spoke  = 8–12 evenly-spaced narrow spokes
+    - dish         = solid disc face with little to no spoke gap
+    - turbine      = curved blade-like spokes
+- "spokeCount": integer 1–24 (1 for "dish"; for "mesh" use 12–18 typical)
+- "diameterInches": estimated wheel diameter, 14–19 typical
+- "widthInches": estimated wheel width, 6.5–12 typical
+- "color": hex of the rim face. Examples: "#d4a657" gold, "#c8ccd1" silver, "#0a0a0c" black, "#caa45e" bronze. Default to "#c8ccd1" if uncertain.
+- "brandGuess": brand string if visible/recognizable (e.g. "BBS", "Apex", "Ronal"), otherwise null
 - "finish": one of "chrome" | "matte" | "gloss" | "gold" | "bronze"
+- "description": one short sentence describing the wheel`;
+
+const GENERATE_PROMPT_EXHAUST = `You are an expert automotive-exhaust classifier. The downstream system uses your JSON to display the part in a configurator review queue. You do NOT need to be perfect — just translate the image into the JSON below as accurately as possible.
+
+INTERPRETATION RULES:
+- Focus on the EXHAUST TIP (the visible chrome/black pipe exit), not the muffler, hangers, or car body.
+- If the photo shows the rear bumper area with tips peeking out, describe the tips you can see — ignore the body.
+- If multiple tips are visible, count them: 1 = single, 2 = dual, 4 = quad.
+- If the tip is angle-cut (slash-cut), say so.
+
+Return ONLY a single JSON object:
+- "tipCount": 1 | 2 | 4
+- "tipShape": "round" | "oval" | "square" | "slash-cut"
+- "material": "stainless" | "chrome" | "titanium" | "carbon-fiber" | "black"
+- "approxDiameterInches": estimated tip diameter as number (2.5–5 typical)
+- "polished": true | false  (true if it has a mirror shine, false if matte/brushed)
+- "brandGuess": brand string if recognizable, otherwise null
 - "description": one short sentence`;
+
+const GENERATE_PROMPTS = {
+  wheels: GENERATE_PROMPT_WHEELS,
+  exhaust: GENERATE_PROMPT_EXHAUST,
+};
 
 app.post('/api/generate-part', async (req, res) => {
   const { imageBase64, mimeType, category } = req.body ?? {};
-  if (category !== 'wheels') {
+  const prompt = GENERATE_PROMPTS[category];
+  if (!prompt) {
     return res.status(400).json({
       ok: false,
-      error: `Phase A part generation only supports "wheels" today. Got "${category}".`,
+      error: `Unsupported category "${category}". Supported: wheels, exhaust.`,
     });
   }
   if (!imageBase64 || !mimeType) {
     return res.status(400).json({ ok: false, error: 'imageBase64 and mimeType are required' });
   }
-  const result = await callGeminiVision(GENERATE_PROMPT_WHEELS, mimeType, imageBase64);
+  const result = await callGeminiVision(prompt, mimeType, imageBase64);
   if (!result.ok) return res.status(result.status).json({ ok: false, error: result.error });
   return res.json({ ok: true, analysis: result.json });
 });

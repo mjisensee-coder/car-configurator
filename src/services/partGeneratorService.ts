@@ -23,7 +23,8 @@ import type {
 // Phase A: procedural part generation
 // ===================================================================
 
-export interface PartGenAnalysis {
+/** Analysis shape for a wheel — drives ProceduralWheel. */
+export interface WheelAnalysis {
   spokeStyle: SpokeStyle;
   spokeCount: number;
   diameterInches: number;
@@ -31,14 +32,32 @@ export interface PartGenAnalysis {
   color: string;
   brandGuess: string | null;
   finish: WheelFinish;
-  /** Free-form one-line summary from the model. */
   description?: string;
+}
+
+/** Analysis shape for an exhaust — displayed in the admin review card. */
+export interface ExhaustAnalysis {
+  tipCount: number;
+  tipShape: 'round' | 'oval' | 'square' | 'slash-cut';
+  material: 'stainless' | 'chrome' | 'titanium' | 'carbon-fiber' | 'black';
+  approxDiameterInches: number;
+  polished: boolean;
+  brandGuess: string | null;
+  description?: string;
+}
+
+export type PartGenAnalysis = WheelAnalysis | ExhaustAnalysis;
+
+/** Type guard for the wheel branch. */
+export function isWheelAnalysis(a: PartGenAnalysis): a is WheelAnalysis {
+  return typeof (a as WheelAnalysis).spokeStyle === 'string';
 }
 
 export interface PartGenResult {
   ok: true;
   analysis: PartGenAnalysis;
-  spec: ProceduralWheelSpec;
+  /** Only set when the analysis was a wheel (Phase A renders to ProceduralWheel). */
+  spec?: ProceduralWheelSpec;
 }
 
 export interface PartGenError {
@@ -71,7 +90,14 @@ export async function generatePartFromPhoto(
 
   if (!data.ok) return data;
 
-  const a = data.analysis;
+  // Wheel category gets an extra step: derive a ProceduralWheelSpec.
+  // Exhaust analysis is returned as-is — the admin shows it as a metadata
+  // card alongside the Phase B 3D asset.
+  if (category !== 'wheels') {
+    return { ok: true, analysis: data.analysis };
+  }
+
+  const a = data.analysis as WheelAnalysis;
   const spec: ProceduralWheelSpec = {
     diameterInches: clampNumber(a.diameterInches, 13, 22, 17),
     spokeStyle: validSpokeStyle(a.spokeStyle),
