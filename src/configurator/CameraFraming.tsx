@@ -29,10 +29,19 @@ import { Vector3, type PerspectiveCamera } from 'three';
  * how most premium configurators behave on viewport change.
  */
 
-/** Real-world BMW E30 length. Matches TARGET_LENGTH in RealCar.tsx. */
+/**
+ * Reference length used by the framing math (real-world E30 = 4.32m).
+ *
+ * NOTE: the actual rendered model is intentionally upscaled to 5.18m
+ * (see TARGET_LENGTH in RealCar.tsx) — leaving this constant at 4.32m
+ * means the framing positions the camera as if the car were
+ * real-sized, but the 20%-larger model then occupies ~0.7 × 1.2 ≈ 84%
+ * of canvas width. That's the desired "hero presence" effect; do not
+ * bump this to match the upscale or the visual gain disappears.
+ */
 const CAR_LENGTH = 4.32;
 
-/** Fraction of canvas width the car should occupy in the default view. */
+/** Fraction of canvas width the framing aims for (with the real-world length). */
 const FILL_FRACTION = 0.7;
 
 export function CameraFraming() {

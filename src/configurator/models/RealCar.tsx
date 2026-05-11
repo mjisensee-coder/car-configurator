@@ -107,8 +107,18 @@ const LIGHT_ANCHOR_NAMES = [
 ] as const;
 type LightAnchorName = (typeof LIGHT_ANCHOR_NAMES)[number];
 
-/** Target body length in scene units (real E30 is 4.32m; we render at 1 unit ≈ 1m). */
-const TARGET_LENGTH = 4.32;
+/**
+ * Target body length in scene units.
+ *
+ * Real BMW E30 is 4.32m. We deliberately render at ~5.18m (20% upscale)
+ * so the car carries more visual presence on screen. The camera-framing
+ * math in CameraFraming.tsx still uses the real-world length (4.32m), so
+ * the framing distance puts a 5.18m model in front of the camera that
+ * occupies ~84% of canvas width rather than the 70% the framing formula
+ * was calibrated for — net effect is a noticeably larger hero shot
+ * without re-tuning every preset.
+ */
+const TARGET_LENGTH = 5.18;
 
 /** Lift the chassis off the ground by this much before applying ride-height. Tuned by eye. */
 const CHASSIS_BASE_Y = 0.20;
