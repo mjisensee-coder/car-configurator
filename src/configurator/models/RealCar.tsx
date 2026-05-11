@@ -249,14 +249,6 @@ export function RealCar({ config }: RealCarProps) {
     });
     toRemove.forEach((obj) => obj.parent?.remove(obj));
 
-    // Diagnostic — confirm which nodes the regex actually hid this run.
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __hideDebug: unknown }).__hideDebug = {
-        hiddenCount: toRemove.length,
-        hiddenNames: toRemove.map((o) => o.name),
-      };
-    }
-
     // Compute uniform scale from the bounding box of remaining (body-only) geometry.
     const box = new Box3().setFromObject(cloned);
     const size = box.getSize(new Vector3());
@@ -344,28 +336,6 @@ export function RealCar({ config }: RealCarProps) {
     for (const m of setup.bodyMeshes) {
       const mat = m.material as MeshStandardMaterial | undefined;
       if (mat && mat.color) apply(mat);
-    }
-    // Temporary diagnostic exposure — lets us introspect from the Chrome MCP
-    // to confirm the paint mutation is actually landing on the visible mesh.
-    // Will be removed once we've verified the fix.
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __paintDebug: unknown }).__paintDebug = {
-        paintId: config.paintId,
-        targetHex: hex,
-        bodyMaterialColor: setup.bodyMaterial
-          ? '#' + setup.bodyMaterial.color.getHexString()
-          : null,
-        bodyMaterialUUID: setup.bodyMaterial?.uuid.slice(0, 8) ?? null,
-        bodyMeshCount: setup.bodyMeshes.length,
-        firstMeshMaterialColor: (() => {
-          const m0 = setup.bodyMeshes[0];
-          const mat = m0?.material as MeshStandardMaterial | undefined;
-          return mat?.color ? '#' + mat.color.getHexString() : null;
-        })(),
-        firstMeshMatchesBodyRef:
-          setup.bodyMaterial != null &&
-          setup.bodyMeshes[0]?.material === setup.bodyMaterial,
-      };
     }
   }, [config.paintId, setup.bodyMaterial, setup.bodyMeshes]);
 
