@@ -8,6 +8,7 @@ import { RealCar } from './models/RealCar';
 import { useConfigurator } from './ConfiguratorContext';
 import { SceneEnvironment } from './environments/SceneEnvironment';
 import { getEnvironmentPreset } from './environments/environmentPresets';
+import { CameraFraming } from './CameraFraming';
 
 interface SceneProps {
   /** Forwarded to the Canvas — used by html2canvas screenshots. */
@@ -74,6 +75,10 @@ export function Scene({ canvasId }: SceneProps) {
         maxPolarAngle={cam.maxPolarAngle}
         target={cam.target}
       />
+
+      {/* Frames the car to fill ~60% of canvas width on mount + resize.
+          Respects OrbitControls' min/maxDistance for tight GLB rooms. */}
+      <CameraFraming />
     </Canvas>
   );
 }
