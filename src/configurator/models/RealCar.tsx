@@ -200,12 +200,20 @@ export function RealCar({ config }: RealCarProps) {
       if (obj.name === 'exhaust') {
         // The 'exhaust' node itself has no transform — its child geometry
         // carries absolute positions. getWorldPosition would return
-        // (~0, ~0, ~0) which floats the procedural tip near the car's
-        // origin, not at the tailpipe. Compute the world-space CENTER of
-        // the actual exhaust geometry instead.
+        // (~0, ~0, ~0). Compute the world-space bounding box of the
+        // actual exhaust geometry instead.
+        //
+        // For Z (longitudinal) we want the REAR-MOST extent (max.z, since
+        // the car's rear is at +Z in scene coords) — that's the tailpipe
+        // outlet. Using the bbox CENTER would land mid-car, because the
+        // exhaust pipe runs the whole length from engine to bumper.
+        //
+        // For X (lateral) we use the center — close enough for the side
+        // the tip should exit on.
         const bbox = new Box3().setFromObject(obj);
         if (!bbox.isEmpty()) {
-          bbox.getCenter(rawExhaustPos);
+          const center = bbox.getCenter(new Vector3());
+          rawExhaustPos.set(center.x, center.y, bbox.max.z);
           exhaustFound = true;
         }
         exhaustNode = obj;
