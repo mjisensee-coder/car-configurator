@@ -73,6 +73,8 @@ export function Scene({ canvasId }: SceneProps) {
         maxDistance={cam.maxDistance}
         minPolarAngle={cam.minPolarAngle}
         maxPolarAngle={cam.maxPolarAngle}
+        minAzimuthAngle={cam.minAzimuthAngle ?? -Infinity}
+        maxAzimuthAngle={cam.maxAzimuthAngle ?? Infinity}
         target={cam.target}
       />
 

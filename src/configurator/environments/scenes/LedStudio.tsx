@@ -84,18 +84,50 @@ export function LedStudio() {
         color="#000000"
       />
 
-      <ambientLight intensity={0.06} />
-      {/* Single hard key light — LED studio is contrasty. */}
+      {/* Lighting: keep the LED-strip drama (colored accents) as the
+          visual signature, but raise overall light enough that the car
+          body is clearly visible. Was way too dark — ambient 0.06 made
+          the car read as a silhouette. */}
+      <ambientLight intensity={0.35} />
+
+      {/* Bright key from above-front */}
       <spotLight
-        position={[0, 6, 3]}
+        position={[0, 6, 4]}
         target-position={[0, 0.6, 0]}
-        angle={0.5}
+        angle={0.55}
         penumbra={0.7}
-        intensity={3}
+        intensity={5.5}
         color="#ffffff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0001}
+      />
+      {/* Fill from the opposite-front side to lift the shadow side of the body */}
+      <spotLight
+        position={[0, 5, -3]}
+        target-position={[0, 0.6, 0]}
+        angle={0.7}
+        penumbra={0.85}
+        intensity={3}
+        color="#ffffff"
+      />
+      {/* Cool accent rim from the right */}
+      <spotLight
+        position={[6, 4, 0]}
+        target-position={[0, 0.6, 0]}
+        angle={0.65}
+        penumbra={0.85}
+        intensity={2.5}
+        color="#aac4e8"
+      />
+      {/* Warm accent rim from the left */}
+      <spotLight
+        position={[-6, 4, 0]}
+        target-position={[0, 0.6, 0]}
+        angle={0.65}
+        penumbra={0.85}
+        intensity={2.5}
+        color="#ffd6a3"
       />
     </>
   );
