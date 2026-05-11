@@ -198,10 +198,16 @@ export function RealCar({ config }: RealCarProps) {
       }
 
       if (obj.name === 'exhaust') {
-        const p = new Vector3();
-        obj.getWorldPosition(p);
-        rawExhaustPos.copy(p);
-        exhaustFound = true;
+        // The 'exhaust' node itself has no transform — its child geometry
+        // carries absolute positions. getWorldPosition would return
+        // (~0, ~0, ~0) which floats the procedural tip near the car's
+        // origin, not at the tailpipe. Compute the world-space CENTER of
+        // the actual exhaust geometry instead.
+        const bbox = new Box3().setFromObject(obj);
+        if (!bbox.isEmpty()) {
+          bbox.getCenter(rawExhaustPos);
+          exhaustFound = true;
+        }
         exhaustNode = obj;
       }
 
