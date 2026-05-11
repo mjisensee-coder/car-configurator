@@ -19,6 +19,7 @@ import {
   getApprovedRegistryEntries,
   subscribe as subscribeRegistry,
 } from '@/services/catalogSyncService';
+import { DEFAULT_CONFIG } from '@/services/buildService';
 import type { CarConfig } from '@/types';
 
 /**
@@ -85,9 +86,13 @@ useGLTF.preload(MODEL_URL, true, true);
 /**
  * Note the underscore-N variant (BrakeDisc_1, Brakedisc_2) — Blender appends
  * `_<digit>` for original meshes and `.001` for the duplicates. We need both.
+ *
+ * `exhaust` is NOT in this set — the GLB's real exhaust is part of the car
+ * and should be visible by default. We toggle its visibility from a
+ * useEffect below when the user selects a non-default exhaust style.
  */
 const HIDDEN_GROUPS =
-  /^(wheel_rb|Rays_TE37|BrakeDisc_\d+|Brakedisc_\d+|tire_cap|caliper_rb|Bolts|Axle|suspention|exhaust|Plane|Sphere)(\.\d+)?$/;
+  /^(wheel_rb|Rays_TE37|BrakeDisc_\d+|Brakedisc_\d+|tire_cap|caliper_rb|Bolts|Axle|suspention|Plane|Sphere)(\.\d+)?$/;
 
 /** Pattern matching the four wheel-hub anchor nodes (used to position our procedural wheels). */
 const WHEEL_ANCHOR = /^wheel_rb(\.\d+)?$/;
@@ -166,6 +171,9 @@ export function RealCar({ config }: RealCarProps) {
     yLift: number;
     wheelAnchors: { x: number; z: number; name: string }[];
     exhaustPos: Vector3;
+    /** Reference to the GLB's exhaust node — toggled visible/hidden when the
+     *  user picks a non-default exhaust style. */
+    exhaustNode: Object3D | null;
     bodyBox: Box3;
     /** World positions of the headlight / taillight anchor groups, in cloned-local space. */
     lightAnchors: Partial<Record<LightAnchorName, Vector3>>;
@@ -176,6 +184,7 @@ export function RealCar({ config }: RealCarProps) {
     const rawWheelAnchors: { x: number; z: number; name: string }[] = [];
     const rawExhaustPos = new Vector3(0, 0, 0);
     let exhaustFound = false;
+    let exhaustNode: Object3D | null = null;
     const emissiveMatCache = new Map<string, MeshStandardMaterial>();
     const lightAnchors: Partial<Record<LightAnchorName, Vector3>> = {};
 
@@ -193,6 +202,7 @@ export function RealCar({ config }: RealCarProps) {
         obj.getWorldPosition(p);
         rawExhaustPos.copy(p);
         exhaustFound = true;
+        exhaustNode = obj;
       }
 
       // Capture headlight / taillight anchor positions (also pre-hiding).
@@ -307,10 +317,39 @@ export function RealCar({ config }: RealCarProps) {
       yLift,
       wheelAnchors,
       exhaustPos,
+      exhaustNode,
       bodyBox: box,
       lightAnchors,
     };
   }, [cloned]);
+
+  // Computed once per render — derived state used by both effects below
+  // and by the JSX further down. Declared early so effects can reference it.
+  const bodyY = setup.yLift + config.rideHeight;
+
+  // Default exhaust = show the GLB's real exhaust geometry.
+  // Non-default = hide the GLB exhaust and let the procedural <ExhaustTip>
+  // take its place at the bumper exit.
+  const usingCustomExhaust = config.exhaustId !== DEFAULT_CONFIG.exhaustId;
+
+  useEffect(() => {
+    if (!setup.exhaustNode) return;
+    setup.exhaustNode.visible = !usingCustomExhaust;
+    // Temporary diagnostic so we can verify the procedural-tip placement
+    // numerically from the Chrome MCP before removing in a follow-up.
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __exhaustDebug: unknown }).__exhaustDebug = {
+        usingCustom: usingCustomExhaust,
+        exhaustId: config.exhaustId,
+        glbExhaustVisible: setup.exhaustNode.visible,
+        glbExhaustNodeName: setup.exhaustNode.name,
+        anchorX_scaled: setup.exhaustPos.x,
+        anchorZ_scaled: setup.exhaustPos.z,
+        proceduralY: 0.28 + config.rideHeight,
+        bodyY,
+      };
+    }
+  }, [usingCustomExhaust, setup.exhaustNode, setup.exhaustPos, config.exhaustId, config.rideHeight, bodyY]);
 
   // Apply paint color whenever the selection changes.
   //
@@ -415,10 +454,9 @@ export function RealCar({ config }: RealCarProps) {
     };
   }, [cloned, config.stickerId, setup.bodyMeshes, setup.bodyBox]);
 
-  const bodyY = setup.yLift + config.rideHeight;
-
   // Translate captured anchor positions (cloned-local) into scene-world
   // coords by applying the same scale + Y-lift the body itself uses.
+  // (bodyY was declared near the top of the component for effect deps.)
   const toWorld = (v: Vector3 | undefined): [number, number, number] | null => {
     if (!v) return null;
     return [v.x * setup.scale, v.y * setup.scale + bodyY, v.z * setup.scale];
@@ -483,18 +521,29 @@ export function RealCar({ config }: RealCarProps) {
         />
       ))}
 
-      {/* Procedural exhaust tip behind the rear bumper.
-          Y = cloned-local exhaust Y (scaled with the body) + body lift +
-          full ride-height offset. Matches how headlight/taillight world
-          positions are computed (see toWorld() above). */}
-      <ExhaustTip
-        position={[
-          setup.exhaustPos.x !== 0 ? setup.exhaustPos.x : 0.45,
-          setup.exhaustPos.y + bodyY,
-          setup.exhaustPos.z,
-        ]}
-        exhaustId={config.exhaustId}
-      />
+      {/* Procedural exhaust tip — only when the user picks a non-default
+          exhaust style. Position:
+            X / Z come from the GLB's captured exhaust anchor (already
+            scaled to scene coords), which the model creator placed at
+            the bumper exit — so the lateral and longitudinal positions
+            are reliable.
+            Y is a fixed real-world tailpipe height tracking ride-height.
+            The GLB's exhaust-node Y was unreliable because the model's
+            mesh origin for that node sits at chassis level, not at the
+            exit, which made the previous formula float the tip below
+            the floor on lowered cars.
+          0.28m matches a real E30 exhaust outlet at stock height; +1×
+          rideHeight makes the tip drop with the body when slammed. */}
+      {usingCustomExhaust && (
+        <ExhaustTip
+          position={[
+            setup.exhaustPos.x !== 0 ? setup.exhaustPos.x : 0.45,
+            0.28 + config.rideHeight,
+            setup.exhaustPos.z,
+          ]}
+          exhaustId={config.exhaustId}
+        />
+      )}
     </>
   );
 }
