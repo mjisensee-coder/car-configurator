@@ -14,6 +14,29 @@ import type { EnvironmentId } from '@/types';
  *   - the global Footer.tsx
  */
 
+/**
+ * OrbitControls tuning per environment. Tight rooms (the GLB-backed
+ * showrooms) need narrower limits to keep the camera inside; open
+ * environments (procedural showroom, night display) can be looser.
+ *
+ * Conventions:
+ *   minDistance/maxDistance  — radius from `target` in scene units (m).
+ *   minPolarAngle            — top tilt limit (radians from +Y).
+ *                              π/2 is the horizon, smaller = looking down.
+ *   maxPolarAngle            — bottom tilt limit. π/2 means "never below
+ *                              target height" — clamps the camera above
+ *                              the floor.
+ *   target                   — orbit center. Set near the car's mid-y so
+ *                              the car stays centered when tilting.
+ */
+export interface CameraConstraints {
+  minDistance: number;
+  maxDistance: number;
+  minPolarAngle: number;
+  maxPolarAngle: number;
+  target: [number, number, number];
+}
+
 export interface EnvironmentPreset {
   id: EnvironmentId;
   name: string;
@@ -21,6 +44,8 @@ export interface EnvironmentPreset {
   vibe: string;
   /** Thumbnail shown in the bottom selector. */
   thumbnailUrl: string;
+  /** Per-environment OrbitControls limits. */
+  camera: CameraConstraints;
 }
 
 const PX = (id: number) =>
@@ -32,24 +57,61 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
     name: 'Pro Showroom',
     vibe: 'Polished concrete + light strips',
     thumbnailUrl: PX(9545550),
+    // 30×20×8m procedural room. Plenty of headroom for tilt + dolly.
+    camera: {
+      minDistance: 4,
+      maxDistance: 14,
+      minPolarAngle: 1.0,
+      maxPolarAngle: Math.PI / 2.15,
+      target: [0, 0.6, 0],
+    },
   },
   'city-night': {
     id: 'city-night',
     name: 'Night Display',
     vibe: 'Wet asphalt + dramatic spots',
     thumbnailUrl: PX(12359723),
+    // Open scene — distant skyline boxes are 20m+ out, no ceiling.
+    camera: {
+      minDistance: 4,
+      maxDistance: 18,
+      minPolarAngle: 0.8,
+      maxPolarAngle: Math.PI / 2.15,
+      target: [0, 0.6, 0],
+    },
   },
   'modern-showroom': {
     id: 'modern-showroom',
     name: 'Modern Showroom',
     vibe: 'Glass ceiling, polished interior',
     thumbnailUrl: PX(36608247),
+    // Polsaris GLB: 28.6×3.2×28.6m room. Ceiling at ~3.2m, walls ±14.3m.
+    // Camera must stay inside the box at all times.
+    //   minPolar 1.27 (~73°)  → at D=8: y = 8·cos(1.27)+0.6 ≈ 2.96m (under ceiling)
+    //   maxPolar π/2          → camera never drops below target y (0.6)
+    //   maxDistance 8         → camera xz ≤ 8m, well inside ±14.3m walls
+    camera: {
+      minDistance: 3.5,
+      maxDistance: 8,
+      minPolarAngle: 1.27,
+      maxPolarAngle: Math.PI / 2,
+      target: [0, 0.6, 0],
+    },
   },
   'led-studio': {
     id: 'led-studio',
     name: 'LED Studio',
     vibe: 'Dark contrasty studio with LED strips',
     thumbnailUrl: PX(11110511),
+    // Velocity Motion GLB: 28.3×3×28.3m, Z asymmetric (back 10.8m, front 17.5m).
+    // Slightly tighter than the Polsaris room because the ceiling is 3.0m.
+    camera: {
+      minDistance: 3.5,
+      maxDistance: 7.5,
+      minPolarAngle: 1.3,
+      maxPolarAngle: Math.PI / 2,
+      target: [0, 0.6, 0],
+    },
   },
 };
 

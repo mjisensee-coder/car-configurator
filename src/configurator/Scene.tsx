@@ -7,6 +7,7 @@ import { RealCar } from './models/RealCar';
 // import { PlaceholderCar } from './models/PlaceholderCar';
 import { useConfigurator } from './ConfiguratorContext';
 import { SceneEnvironment } from './environments/SceneEnvironment';
+import { getEnvironmentPreset } from './environments/environmentPresets';
 
 interface SceneProps {
   /** Forwarded to the Canvas — used by html2canvas screenshots. */
@@ -18,13 +19,21 @@ interface SceneProps {
  * block (room geometry, lights, floor, contact shadows) is driven by the
  * active environment id; the car is a sibling that reads the config.
  *
- * Polar-angle constraints keep the camera from rising above the room
- * ceilings of indoor environments — looking down past the horizon would
- * expose the gap between geometry and background. The most-restrictive
- * setting (~57° below straight up) covers all 4 environments.
+ * Orbit constraints are PER-ENVIRONMENT — the GLB-backed showrooms are
+ * tight 28×3×28m rooms whose ceilings and walls must contain the camera,
+ * while the procedural Pro Showroom and Night Display can afford looser
+ * tilt and dolly limits. Constraints live next to the rest of the
+ * environment metadata (see `camera` in environmentPresets.ts).
+ *
+ * `key` on `<OrbitControls>` forces a fresh control instance whenever
+ * the environment swaps. Without it, the previously-clamped camera
+ * position can carry over and feel "stuck" briefly until the user
+ * touches the controls.
  */
 export function Scene({ canvasId }: SceneProps) {
   const { config } = useConfigurator();
+  const preset = getEnvironmentPreset(config.environmentId);
+  const cam = preset.camera;
 
   return (
     <Canvas
@@ -55,14 +64,15 @@ export function Scene({ canvasId }: SceneProps) {
       </Suspense>
 
       <OrbitControls
+        key={preset.id}
         makeDefault
         enableDamping
         dampingFactor={0.1}
-        minDistance={4}
-        maxDistance={14}
-        minPolarAngle={1.0}
-        maxPolarAngle={Math.PI / 2.15}
-        target={[0, 0.6, 0]}
+        minDistance={cam.minDistance}
+        maxDistance={cam.maxDistance}
+        minPolarAngle={cam.minPolarAngle}
+        maxPolarAngle={cam.maxPolarAngle}
+        target={cam.target}
       />
     </Canvas>
   );
