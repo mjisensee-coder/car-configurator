@@ -89,20 +89,31 @@ export function NightDisplay() {
         color="#040414"
       />
 
-      {/* Very low ambient — drama comes from the spots */}
-      <ambientLight intensity={0.05} />
+      {/* Ambient bumped from 0.05 to 0.28 — the car was crushing to
+          silhouette before. Still moody, but you can now read the paint
+          and panel lines. The colored spots (below) carry the night feel. */}
+      <ambientLight intensity={0.28} />
 
       {/* Cool white key from above-front */}
       <spotLight
         position={[3, 6, 5]}
         target-position={[0, 0.6, 0]}
-        angle={0.45}
+        angle={0.5}
         penumbra={0.7}
-        intensity={3.5}
+        intensity={5.5}
         color="#ffffff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0001}
+      />
+      {/* Front fill spot for the shadow side */}
+      <spotLight
+        position={[-3, 5, 4]}
+        target-position={[0, 0.6, 0]}
+        angle={0.6}
+        penumbra={0.85}
+        intensity={2.5}
+        color="#ffffff"
       />
       {/* Cyan accent from the side */}
       <spotLight
@@ -110,7 +121,7 @@ export function NightDisplay() {
         target-position={[0, 0.6, 0]}
         angle={0.55}
         penumbra={0.8}
-        intensity={2.5}
+        intensity={3.5}
         color="#5acaff"
       />
       {/* Warm amber rim from behind */}
@@ -119,7 +130,7 @@ export function NightDisplay() {
         target-position={[0, 0.6, 0]}
         angle={0.6}
         penumbra={0.85}
-        intensity={2}
+        intensity={3}
         color="#ffaa55"
       />
 

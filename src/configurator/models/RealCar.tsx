@@ -72,6 +72,41 @@ const HIDDEN_GROUPS =
 /** Pattern matching the four wheel-hub anchor nodes (used to position our procedural wheels). */
 const WHEEL_ANCHOR = /^wheel_rb(\.\d+)?$/;
 
+/**
+ * Materials we recolor to look "lit". Each entry gives the emissive
+ * color + intensity. We *clone* the source material on first hit and
+ * reassign every mesh that referenced the original — so we mutate
+ * one cloned material per light-type, not the cached source.
+ *
+ * Material names come from the source GLB (Artem P's E30, verified via
+ * gltf-transform inspect). Edit per-environment by adjusting the
+ * emissiveIntensity values; toneMapped=false makes the emissive read
+ * as a real light even under bright IBL.
+ */
+const EMISSIVE_LIGHT_MATERIALS: Record<
+  string,
+  { color: string; intensity: number }
+> = {
+  // Front
+  light_inner: { color: '#fffae0', intensity: 3.0 },             // headlight bulbs / reflectors
+  orange_glass_light_front: { color: '#ffaa44', intensity: 0.5 }, // amber turn signals (front)
+  // Rear
+  red_light_glass: { color: '#ff1818', intensity: 2.0 },         // tail glass (main red)
+  emission_back: { color: '#ff3030', intensity: 1.3 },           // tail filament behind glass
+  glass_light_back: { color: '#fff5d0', intensity: 0.6 },        // reverse / clear tail elements
+  orange_glass_light_back: { color: '#ff8a30', intensity: 0.7 }, // amber turn signals (rear)
+  // Plate
+  emission_number: { color: '#fff5d0', intensity: 0.5 },         // license-plate lamp
+};
+
+/** Anchor nodes whose world positions become real PointLight/SpotLight origins. */
+const LIGHT_ANCHOR_NAMES = [
+  'front_light_l',
+  'front_light_r',
+  'back_light_body',
+] as const;
+type LightAnchorName = (typeof LIGHT_ANCHOR_NAMES)[number];
+
 /** Target body length in scene units (real E30 is 4.32m; we render at 1 unit ≈ 1m). */
 const TARGET_LENGTH = 4.32;
 
@@ -102,6 +137,8 @@ export function RealCar({ config }: RealCarProps) {
     wheelAnchors: { x: number; z: number; name: string }[];
     exhaustPos: Vector3;
     bodyBox: Box3;
+    /** World positions of the headlight / taillight anchor groups, in cloned-local space. */
+    lightAnchors: Partial<Record<LightAnchorName, Vector3>>;
   };
   const setup: Setup = useMemo<Setup>(() => {
     let bodyMaterial: MeshStandardMaterial | null = null;
@@ -109,6 +146,8 @@ export function RealCar({ config }: RealCarProps) {
     const rawWheelAnchors: { x: number; z: number; name: string }[] = [];
     const rawExhaustPos = new Vector3(0, 0, 0);
     let exhaustFound = false;
+    const emissiveMatCache = new Map<string, MeshStandardMaterial>();
+    const lightAnchors: Partial<Record<LightAnchorName, Vector3>> = {};
 
     cloned.updateMatrixWorld(true);
     cloned.traverse((obj: Object3D) => {
@@ -126,6 +165,13 @@ export function RealCar({ config }: RealCarProps) {
         exhaustFound = true;
       }
 
+      // Capture headlight / taillight anchor positions (also pre-hiding).
+      if ((LIGHT_ANCHOR_NAMES as readonly string[]).includes(obj.name)) {
+        const p = new Vector3();
+        obj.getWorldPosition(p);
+        lightAnchors[obj.name as LightAnchorName] = p;
+      }
+
       // Find the shared "body" material on the first body mesh we encounter,
       // then clone it so paint mutations don't bleed into the cached source.
       // Also collect every body-material mesh — we need them later as decal
@@ -140,6 +186,23 @@ export function RealCar({ config }: RealCarProps) {
           }
           mesh.material = bodyMaterial;
           bodyMeshes.push(mesh);
+        } else if (EMISSIVE_LIGHT_MATERIALS[mat.name]) {
+          // Make the headlight / taillight materials look "lit".
+          // Clone the material once per material name, then reassign every
+          // mesh that referenced it. We never mutate the source material.
+          let lit = emissiveMatCache.get(mat.name);
+          if (!lit) {
+            const cfg = EMISSIVE_LIGHT_MATERIALS[mat.name];
+            lit = mat.clone();
+            lit.name = mat.name;
+            lit.emissive.set(cfg.color);
+            lit.emissiveIntensity = cfg.intensity;
+            // Without this the emissive gets crushed by ACES tone mapping
+            // and reads as dull, not "on".
+            lit.toneMapped = false;
+            emissiveMatCache.set(mat.name, lit);
+          }
+          mesh.material = lit;
         }
       }
     });
@@ -207,6 +270,7 @@ export function RealCar({ config }: RealCarProps) {
       wheelAnchors,
       exhaustPos,
       bodyBox: box,
+      lightAnchors,
     };
   }, [cloned]);
 
@@ -300,12 +364,60 @@ export function RealCar({ config }: RealCarProps) {
 
   const bodyY = setup.yLift + config.rideHeight;
 
+  // Translate captured anchor positions (cloned-local) into scene-world
+  // coords by applying the same scale + Y-lift the body itself uses.
+  const toWorld = (v: Vector3 | undefined): [number, number, number] | null => {
+    if (!v) return null;
+    return [v.x * setup.scale, v.y * setup.scale + bodyY, v.z * setup.scale];
+  };
+  const headlightL = toWorld(setup.lightAnchors.front_light_l);
+  const headlightR = toWorld(setup.lightAnchors.front_light_r);
+  const taillight = toWorld(setup.lightAnchors.back_light_body);
+
   return (
     <>
       {/* Body — the GLB at our normalized scale and ride-height-driven Y */}
       <group position={[0, bodyY, 0]} scale={setup.scale}>
         <primitive object={cloned} />
       </group>
+
+      {/* Headlight cones — subtle warm spotlights aimed forward (-Z) so the
+          car looks like its lights are on. Distance falloff so they fade
+          before reaching anything obnoxious. */}
+      {headlightL && (
+        <spotLight
+          position={headlightL}
+          target-position={[headlightL[0], headlightL[1] - 0.1, headlightL[2] - 5]}
+          angle={0.5}
+          penumbra={0.85}
+          intensity={1.4}
+          distance={9}
+          color="#fffae0"
+        />
+      )}
+      {headlightR && (
+        <spotLight
+          position={headlightR}
+          target-position={[headlightR[0], headlightR[1] - 0.1, headlightR[2] - 5]}
+          angle={0.5}
+          penumbra={0.85}
+          intensity={1.4}
+          distance={9}
+          color="#fffae0"
+        />
+      )}
+
+      {/* Taillight glow — single small red point light near the rear panel.
+          Acts as an ambient red wash on the rear quarter, complementing
+          the emissive tail-glass material. */}
+      {taillight && (
+        <pointLight
+          position={[taillight[0], taillight[1], taillight[2] + 0.05]}
+          color="#ff2020"
+          intensity={0.7}
+          distance={2.5}
+        />
+      )}
 
       {/* Wheels — resolves to either a registry entry (AI-generated) or
           the catalog Wheel based on the current wheelId. */}
