@@ -47,10 +47,25 @@ import type { CarConfig } from '@/types';
  * include the asphalt Plane / skybox Sphere in our auto-scale calculation.
  */
 
-const MODEL_URL = '/models/e30.glb';
+/**
+ * v2 of the optimized GLB.
+ *
+ * v1 was compressed via `gltf-transform optimize` which by default runs the
+ * `palette` pass — that merges single-color materials into a shared palette
+ * atlas, renaming everything to `PaletteMaterial001..N`. We rely on the
+ * original material names (`body`, `light_inner`, `red_light_glass`, etc.)
+ * to find the meshes we mutate for paint + headlight/taillight emissives,
+ * so v1 silently broke those features.
+ *
+ * v2 is re-compressed with `--palette false`: same 2.7MB output, same
+ * mesh-opt geometry, but original material names preserved. The filename
+ * bump (`e30.glb` → `e30_v2.glb`) busts the user's browser cache
+ * (the /models/* path is served with `Cache-Control: immutable`).
+ */
+const MODEL_URL = '/models/e30_v2.glb';
 
 // Meshopt-compressed GLB. Drei's useGLTF auto-loads the meshopt decoder when
-// the third argument is `true`. Compression took the asset from 27MB → 2.7MB.
+// the third argument is `true`.
 useGLTF.preload(MODEL_URL, true, true);
 
 /**
