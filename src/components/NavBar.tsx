@@ -54,6 +54,16 @@ export function NavBar() {
             </>
           )}
         </NavLink>
+        <NavLink to="/heritage" className={linkClass}>
+          {({ isActive }) => (
+            <>
+              Heritage
+              {isActive && (
+                <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
+              )}
+            </>
+          )}
+        </NavLink>
         <NavLink to="/catalog" className={linkClass}>
           {({ isActive }) => (
             <>

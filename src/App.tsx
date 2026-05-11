@@ -20,6 +20,11 @@ const ConfiguratorPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('@/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
+// Heritage is a magazine-style feature page (large images, animated reveals);
+// lazy-loaded so the main shell stays light.
+const HeritagePage = lazy(() =>
+  import('@/heritage/HeritagePage').then((m) => ({ default: m.HeritagePage })),
+);
 
 export function App() {
   return (
@@ -52,6 +57,7 @@ function Shell() {
           <Route path="/" element={<Navigate to="/configure" replace />} />
           <Route path="/configure" element={<ConfiguratorPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/heritage" element={<HeritagePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/configure" replace />} />
