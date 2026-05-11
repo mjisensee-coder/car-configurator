@@ -57,7 +57,25 @@ const TRIAL_PARTS = trialPartsData as TrialPart[];
 const queue = new Map<string, QueueEntry>();
 const subscribers = new Set<() => void>();
 
+/**
+ * Stable-reference cache for the queue and the approved-entries view.
+ *
+ * Returning a fresh array from getSnapshot() each call breaks
+ * useSyncExternalStore (React 18) — Object.is sees a "change" every
+ * check, schedules a re-render, which calls getSnapshot again, etc.
+ * Eventually React throws #185 ("Maximum update depth exceeded") and
+ * the whole tree tears down. We caught this exact crash on /configure
+ * via a wheel swap.
+ *
+ * The cache is null-checked and rebuilt on demand; `notify()` clears
+ * both caches whenever the underlying queue mutates.
+ */
+let queueArrayCache: QueueEntry[] | null = null;
+let approvedCache: RegistryEntry[] | null = null;
+
 function notify() {
+  queueArrayCache = null;
+  approvedCache = null;
   subscribers.forEach((fn) => fn());
 }
 
@@ -85,7 +103,11 @@ export function loadTrialParts(): QueueEntry[] {
 }
 
 export function getQueue(): QueueEntry[] {
-  return Array.from(queue.values()).sort((a, b) => a.updatedAt - b.updatedAt);
+  if (queueArrayCache !== null) return queueArrayCache;
+  queueArrayCache = Array.from(queue.values()).sort(
+    (a, b) => a.updatedAt - b.updatedAt,
+  );
+  return queueArrayCache;
 }
 
 export function getEntry(id: string): QueueEntry | undefined {
@@ -213,6 +235,10 @@ export async function fetchRegistry(): Promise<Registry> {
  * part immediately selectable in /configure during the same session.
  */
 export function getApprovedRegistryEntries(): RegistryEntry[] {
+  // Cached: returning a fresh array each call breaks useSyncExternalStore
+  // (React #185, "Maximum update depth exceeded"). Rebuilt on demand and
+  // invalidated by notify() whenever the queue actually mutates.
+  if (approvedCache !== null) return approvedCache;
   const out: RegistryEntry[] = [];
   for (const entry of queue.values()) {
     if (entry.status !== 'approved') continue;
@@ -248,5 +274,6 @@ export function getApprovedRegistryEntries(): RegistryEntry[] {
       });
     }
   }
-  return out;
+  approvedCache = out;
+  return approvedCache;
 }

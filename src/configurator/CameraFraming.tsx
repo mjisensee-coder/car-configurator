@@ -33,7 +33,7 @@ import { Vector3, type PerspectiveCamera } from 'three';
 const CAR_LENGTH = 4.32;
 
 /** Fraction of canvas width the car should occupy in the default view. */
-const FILL_FRACTION = 0.6;
+const FILL_FRACTION = 0.7;
 
 export function CameraFraming() {
   const size = useThree((s) => s.size);

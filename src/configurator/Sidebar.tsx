@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { PartCategory, StickerId } from '@/types';
 import { useConfigurator } from './ConfiguratorContext';
 import { getPartsByCategory, getPartById } from '@/services/partsService';
@@ -105,10 +105,19 @@ function WheelsPanel() {
   const selected = getPartById(config.wheelId);
 
   // Pick up any wheel entries the admin has approved during this session.
-  const approved = useSyncExternalStore(
+  // useSyncExternalStore requires a stable snapshot reference — the
+  // service caches getApprovedRegistryEntries() and we then derive the
+  // per-category subset via useMemo so it's also referentially stable
+  // until the approved list changes. (A naive `.filter()` inline here
+  // would tear React down with #185.)
+  const allApproved = useSyncExternalStore(
     (cb) => subscribeRegistry(cb),
-    () => getApprovedRegistryEntries().filter((e) => e.category === 'wheels'),
-    () => getApprovedRegistryEntries().filter((e) => e.category === 'wheels'),
+    () => getApprovedRegistryEntries(),
+    () => getApprovedRegistryEntries(),
+  );
+  const approved = useMemo(
+    () => allApproved.filter((e) => e.category === 'wheels'),
+    [allApproved],
   );
 
   return (
