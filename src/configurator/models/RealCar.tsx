@@ -349,21 +349,7 @@ export function RealCar({ config }: RealCarProps) {
   useEffect(() => {
     if (!setup.exhaustNode) return;
     setup.exhaustNode.visible = !usingCustomExhaust;
-    // Temporary diagnostic so we can verify the procedural-tip placement
-    // numerically from the Chrome MCP before removing in a follow-up.
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __exhaustDebug: unknown }).__exhaustDebug = {
-        usingCustom: usingCustomExhaust,
-        exhaustId: config.exhaustId,
-        glbExhaustVisible: setup.exhaustNode.visible,
-        glbExhaustNodeName: setup.exhaustNode.name,
-        anchorX_scaled: setup.exhaustPos.x,
-        anchorZ_scaled: setup.exhaustPos.z,
-        proceduralY: 0.28 + config.rideHeight,
-        bodyY,
-      };
-    }
-  }, [usingCustomExhaust, setup.exhaustNode, setup.exhaustPos, config.exhaustId, config.rideHeight, bodyY]);
+  }, [usingCustomExhaust, setup.exhaustNode]);
 
   // Apply paint color whenever the selection changes.
   //
