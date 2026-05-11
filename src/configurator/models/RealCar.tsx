@@ -48,21 +48,26 @@ import type { CarConfig } from '@/types';
  */
 
 /**
- * v2 of the optimized GLB.
+ * v3 of the optimized GLB.
  *
- * v1 was compressed via `gltf-transform optimize` which by default runs the
- * `palette` pass — that merges single-color materials into a shared palette
- * atlas, renaming everything to `PaletteMaterial001..N`. We rely on the
- * original material names (`body`, `light_inner`, `red_light_glass`, etc.)
- * to find the meshes we mutate for paint + headlight/taillight emissives,
- * so v1 silently broke those features.
+ *   v1 — `gltf-transform optimize` defaults: ran the `palette` pass,
+ *        which renamed every single-color material to `PaletteMaterial*`.
+ *        Broke paint (no material named `body`) + emissives.
  *
- * v2 is re-compressed with `--palette false`: same 2.7MB output, same
- * mesh-opt geometry, but original material names preserved. The filename
- * bump (`e30.glb` → `e30_v2.glb`) busts the user's browser cache
- * (the /models/* path is served with `Cache-Control: immutable`).
+ *   v2 — Re-compressed with `--palette false`. Material names preserved,
+ *        but the default pipeline still ran `flatten` + `join`, which
+ *        collapsed 257 nodes to 41 and merged the wheel/exhaust/light
+ *        parent groups into single primitives. HIDDEN_GROUPS regex
+ *        stopped matching anything → GLB exhaust + wheels visible
+ *        ("floating exhaust pipe" reported by user).
+ *
+ *   v3 — Custom minimal pipeline: only `webp` (texture format) +
+ *        `resize` (1024px) + `meshopt` (geometry compression). No
+ *        dedup, instance, palette, flatten, or join — full hierarchy
+ *        preserved. Same 2.7MB output. Filename bumped v2→v3 to bust
+ *        the browser cache (/models/* has Cache-Control: immutable).
  */
-const MODEL_URL = '/models/e30_v2.glb';
+const MODEL_URL = '/models/e30_v3.glb';
 
 // Meshopt-compressed GLB. Drei's useGLTF auto-loads the meshopt decoder when
 // the third argument is `true`.
