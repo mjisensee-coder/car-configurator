@@ -244,6 +244,14 @@ export function RealCar({ config }: RealCarProps) {
     });
     toRemove.forEach((obj) => obj.parent?.remove(obj));
 
+    // Diagnostic — confirm which nodes the regex actually hid this run.
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __hideDebug: unknown }).__hideDebug = {
+        hiddenCount: toRemove.length,
+        hiddenNames: toRemove.map((o) => o.name),
+      };
+    }
+
     // Compute uniform scale from the bounding box of remaining (body-only) geometry.
     const box = new Box3().setFromObject(cloned);
     const size = box.getSize(new Vector3());
