@@ -268,9 +268,17 @@ export function RealCar({ config }: RealCarProps) {
       name: a.name,
     }));
 
+    // Exhaust position: scale ALL three axes uniformly (was previously
+    // hardcoded to y=0.238 / 0.22, which floated below the bumper after
+    // we upscaled the car to 5.18m). Y here is in cloned-local space; the
+    // JSX adds bodyY at render time so the exhaust tracks ride-height.
     const exhaustPos = exhaustFound
-      ? new Vector3(rawExhaustPos.x * scale, WHEEL_CENTER_Y * 0.7, rawExhaustPos.z * scale)
-      : new Vector3(0.45, 0.22, -2.1);
+      ? new Vector3(
+          rawExhaustPos.x * scale,
+          rawExhaustPos.y * scale,
+          rawExhaustPos.z * scale,
+        )
+      : new Vector3(0.45, 0.18, -2.1);
 
     return {
       bodyMaterial,
@@ -285,16 +293,53 @@ export function RealCar({ config }: RealCarProps) {
   }, [cloned]);
 
   // Apply paint color whenever the selection changes.
+  //
+  // DEFENSIVE: we mutate via BOTH paths — the cached `setup.bodyMaterial`
+  // reference AND each body mesh's current `.material` field. The two are
+  // supposed to point at the same MeshStandardMaterial, but if anything
+  // later in the scene-build chain has replaced a mesh's material (e.g.
+  // a re-traverse mutating during a remount), the cached ref goes stale
+  // and the visible mesh stops responding to paint clicks. Hitting both
+  // paths is cheap (max ~25 body meshes) and guarantees the visible
+  // material gets the new color.
   useEffect(() => {
-    if (!setup.bodyMaterial) return;
     const part = getPartById(config.paintId);
     const hex = (part?.renderHint?.hex as string) ?? '#f1f3f4';
     const metallic = ((part?.renderHint?.metallic as number) ?? 0) > 0;
-    setup.bodyMaterial.color.set(hex);
-    setup.bodyMaterial.metalness = metallic ? 0.85 : 0.45;
-    setup.bodyMaterial.roughness = metallic ? 0.28 : 0.4;
-    setup.bodyMaterial.needsUpdate = true;
-  }, [config.paintId, setup.bodyMaterial]);
+
+    const apply = (mat: MeshStandardMaterial) => {
+      mat.color.set(hex);
+      mat.metalness = metallic ? 0.85 : 0.45;
+      mat.roughness = metallic ? 0.28 : 0.4;
+    };
+    if (setup.bodyMaterial) apply(setup.bodyMaterial);
+    for (const m of setup.bodyMeshes) {
+      const mat = m.material as MeshStandardMaterial | undefined;
+      if (mat && mat.color) apply(mat);
+    }
+    // Temporary diagnostic exposure — lets us introspect from the Chrome MCP
+    // to confirm the paint mutation is actually landing on the visible mesh.
+    // Will be removed once we've verified the fix.
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __paintDebug: unknown }).__paintDebug = {
+        paintId: config.paintId,
+        targetHex: hex,
+        bodyMaterialColor: setup.bodyMaterial
+          ? '#' + setup.bodyMaterial.color.getHexString()
+          : null,
+        bodyMaterialUUID: setup.bodyMaterial?.uuid.slice(0, 8) ?? null,
+        bodyMeshCount: setup.bodyMeshes.length,
+        firstMeshMaterialColor: (() => {
+          const m0 = setup.bodyMeshes[0];
+          const mat = m0?.material as MeshStandardMaterial | undefined;
+          return mat?.color ? '#' + mat.color.getHexString() : null;
+        })(),
+        firstMeshMatchesBodyRef:
+          setup.bodyMaterial != null &&
+          setup.bodyMeshes[0]?.material === setup.bodyMaterial,
+      };
+    }
+  }, [config.paintId, setup.bodyMaterial, setup.bodyMeshes]);
 
   // Project sticker decals onto each body panel using THREE.DecalGeometry.
   // The projection volume spans the car laterally so both sides receive the
@@ -440,11 +485,14 @@ export function RealCar({ config }: RealCarProps) {
         />
       ))}
 
-      {/* Procedural exhaust tip behind the rear bumper */}
+      {/* Procedural exhaust tip behind the rear bumper.
+          Y = cloned-local exhaust Y (scaled with the body) + body lift +
+          full ride-height offset. Matches how headlight/taillight world
+          positions are computed (see toWorld() above). */}
       <ExhaustTip
         position={[
           setup.exhaustPos.x !== 0 ? setup.exhaustPos.x : 0.45,
-          0.22 + config.rideHeight * 0.5,
+          setup.exhaustPos.y + bodyY,
           setup.exhaustPos.z,
         ]}
         exhaustId={config.exhaustId}
