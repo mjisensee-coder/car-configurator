@@ -331,7 +331,7 @@ const CULTURE_GRID = [
   { id: 11110466, label: 'Stealth' },
   { id: 20227074, label: 'Touring' },
   { id: 12472234, label: 'Daily' },
-  { id: 18781177, label: 'Resto' },
+  { id: 37508081, label: 'Resto' },
 ];
 
 function CommunityCulture() {
