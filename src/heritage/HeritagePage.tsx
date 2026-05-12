@@ -39,8 +39,8 @@ function Hero() {
   return (
     <section className="relative h-[88vh] min-h-[600px] overflow-hidden">
       <img
-        src={px(18311087, 2400)}
-        alt="BMW E30 in dramatic shadowed lighting"
+        src={px(11110511, 2400)}
+        alt="BMW E30 on a snowy Colorado mountain road, headlights lit at dusk"
         className="absolute inset-0 w-full h-full object-cover scale-105"
       />
       {/* Gradients: top vignette for navbar legibility, bottom vignette
@@ -99,7 +99,7 @@ const MILESTONES: Milestone[] = [
     year: '1982',
     title: 'Launch',
     body: 'Munich introduces the E30 3 Series, a successor to the iconic E21 with cleaner lines and a more refined chassis.',
-    image: px(18781177, 900),
+    image: px(11110426, 900),
   },
   {
     year: '1986',
