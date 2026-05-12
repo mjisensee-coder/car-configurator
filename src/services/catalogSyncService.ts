@@ -5,6 +5,7 @@ import {
   generate3DPart,
   type PartGenAnalysis,
   type GeneratedPartAsset,
+  type Generation3DBackend,
 } from './partGeneratorService';
 import type { ProceduralWheelSpec } from '@/configurator/models/ProceduralWheel';
 
@@ -45,6 +46,10 @@ export interface QueueEntry {
   analysis?: PartGenAnalysis;
   /** Phase-B 3D asset (only set for exhaust/complex pipeline). */
   asset?: GeneratedPartAsset;
+  /** Which 3D backend produced `asset` (so the admin can show a badge). */
+  assetBackend?: Generation3DBackend;
+  /** Server-side note about the generation (e.g. fallback reason). */
+  generationNote?: string;
   /** Last error if status = "error". */
   error?: string;
   updatedAt: number;
@@ -136,11 +141,18 @@ function update(id: string, patch: Partial<QueueEntry>) {
  *   We don't fail the whole entry if one half errors out; we record
  *   whatever we got.
  */
-export async function runGeneration(id: string): Promise<void> {
+export async function runGeneration(
+  id: string,
+  backend?: Generation3DBackend,
+): Promise<void> {
   const entry = queue.get(id);
   if (!entry) return;
 
-  update(id, { status: 'generating', error: undefined });
+  update(id, {
+    status: 'generating',
+    error: undefined,
+    generationNote: undefined,
+  });
 
   try {
     // Fetch the source image and convert to base64. Pulling client-side
@@ -167,12 +179,16 @@ export async function runGeneration(id: string): Promise<void> {
     // something useful.
     const [analysisRes, assetRes] = await Promise.all([
       generatePartFromPhoto(base64, mimeType, entry.trial.category),
-      generate3DPart(base64, mimeType, entry.trial.category),
+      generate3DPart(base64, mimeType, entry.trial.category, backend),
     ]);
 
     const patch: Partial<QueueEntry> = { status: 'review' };
     if (analysisRes.ok) patch.analysis = analysisRes.analysis;
-    if (assetRes.ok) patch.asset = assetRes.asset;
+    if (assetRes.ok) {
+      patch.asset = assetRes.asset;
+      patch.assetBackend = assetRes.backend;
+      patch.generationNote = assetRes.note;
+    }
 
     // If both halves errored, surface a combined error.
     if (!analysisRes.ok && !assetRes.ok) {

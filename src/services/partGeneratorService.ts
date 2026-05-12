@@ -109,11 +109,14 @@ export async function generatePartFromPhoto(
 }
 
 // ===================================================================
-// Phase B: AI 3D generation (Tripo3D) with 2.5D billboard fallback
+// Phase B: AI 3D generation (TRELLIS / Tripo3D) with billboard fallback
 // ===================================================================
 
+/** Which 3D backend ran on the server for this asset. */
+export type Generation3DBackend = 'fal' | 'tripo' | 'billboard';
+
 export interface GeneratedPartAsset {
-  /** "glb" = real Tripo3D model. "billboard" = textured plane fallback. */
+  /** "glb" = real 3D mesh. "billboard" = textured plane fallback. */
   kind: 'glb' | 'billboard';
   /** URL to a GLB (kind=glb) or to the source image (kind=billboard). */
   url: string;
@@ -124,24 +127,39 @@ export interface GeneratedPartAsset {
 export interface GeneratePart3DResult {
   ok: true;
   asset: GeneratedPartAsset;
+  /** Which backend actually produced the asset (may differ from requested). */
+  backend: Generation3DBackend;
+  /** What the caller asked for, if anything. */
+  requestedBackend?: Generation3DBackend;
+  /** Server-side note (e.g. "fal.ai unavailable, fell back to Tripo3D"). */
+  note?: string;
 }
 
 export interface GeneratePart3DError {
   ok: false;
   error: string;
+  /** Backend that errored, if we got that far. */
+  backend?: Generation3DBackend;
+  requestedBackend?: Generation3DBackend;
 }
 
+/**
+ * Kick off a 3D generation. The server picks a backend when `backend` is
+ * omitted — defaults to fal.ai TRELLIS when FAL_KEY is set, otherwise
+ * Tripo3D, otherwise a 2.5D billboard.
+ */
 export async function generate3DPart(
   imageBase64: string,
   mimeType: string,
   category: PartCategory,
+  backend?: Generation3DBackend,
 ): Promise<GeneratePart3DResult | GeneratePart3DError> {
   let resp: Response;
   try {
     resp = await fetch('/api/generate-3d', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64, mimeType, category }),
+      body: JSON.stringify({ imageBase64, mimeType, category, backend }),
     });
   } catch (err) {
     return {
@@ -151,9 +169,56 @@ export async function generate3DPart(
   }
 
   const data = (await resp.json()) as
-    | { ok: true; asset: GeneratedPartAsset }
-    | { ok: false; error: string };
+    | {
+        ok: true;
+        asset: GeneratedPartAsset;
+        backend: Generation3DBackend;
+        requestedBackend?: Generation3DBackend;
+        note?: string;
+      }
+    | {
+        ok: false;
+        error: string;
+        backend?: Generation3DBackend;
+        requestedBackend?: Generation3DBackend;
+      };
   return data;
+}
+
+// ===================================================================
+// Health probe — tells the client which 3D backends are available so
+// the admin UI can pre-select the right default and show accurate badges.
+// ===================================================================
+
+export interface BackendFeatures {
+  photoMatch: boolean;
+  partGen: boolean;
+  tripo3D: boolean;
+  trellis: boolean;
+}
+
+export interface BackendHealth {
+  features: BackendFeatures;
+  defaultBackend: Generation3DBackend;
+}
+
+export async function fetchBackendHealth(): Promise<BackendHealth | null> {
+  try {
+    const r = await fetch('/healthz');
+    if (!r.ok) return null;
+    const data = await r.json();
+    return {
+      features: data.features ?? {
+        photoMatch: false,
+        partGen: false,
+        tripo3D: false,
+        trellis: false,
+      },
+      defaultBackend: data.defaultBackend ?? 'billboard',
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ===================================================================
