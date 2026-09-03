@@ -10,31 +10,64 @@ This file is for engineers (and Claude) extending the codebase.
 
 ## Stack
 
-- React 18, Vite, TypeScript (strict)
-- React Three Fiber + drei for the 3D scene
-- React Router v6 for routing
+- Next.js 16 (App Router) + React 19
+- Postgres via `pg`, with a bundled-JSON fallback
+- React Three Fiber 9 + drei 10 + three 0.185 for the 3D scene
 - Tailwind CSS for styling
 - html2canvas for build screenshots
-- Express for the production runtime (Railway / Docker)
+- Deploys to Vercel or to Railway/Docker from the same tree
 
 ## Top-level layout
 
 ```
+db/                 schema.sql + operational scripts (apply, seed, verify)
+scripts/            asset pipeline (HDR baking, KTX2 encoding, transcoder)
 src/
-  auth/           Auth context, login page, route guard
-  catalog/        Parts catalog page (browse, filter, sort)
-  components/     Shared, page-agnostic UI (NavBar, etc.)
-  configurator/   Main configurator route + 3D scene
-    models/       Model loader interface + placeholder car
-    parts/        Per-category part swap components
-  data/           JSON mocks (parts, builds)
-  gallery/        Community gallery page
-  services/       Data access layer — the only thing that touches `data/`
-  types/          Domain interfaces
-  App.tsx         Router + provider wiring
-  main.tsx        Entry point
-  styles.css      Tailwind directives + globals
+  app/              App Router — routes, layouts, API route handlers
+    (shell)/        everything inside the NavBar chrome
+    api/            route handlers (catalog, fitment, AI proxies, health)
+  server/           server-only modules: db pool, SQL queries, AI proxies
+  auth/             Auth context, login page, client-side gate
+  catalog/          Catalog filters + part card (server components)
+  components/       Shared, page-agnostic UI (NavBar, Footer)
+  configurator/     3D studio
+    environments/   Scene presets, baked HDR loader, KTX2 floor mask
+    models/         Model loader + placeholder car
+    parts/          Per-category part swap components
+    renderer/       WebGL / WebGPU backend selection
+  data/             JSON mocks + the fallback catalog
+  gallery/          Community gallery (client island)
+  services/         Client-side data access + hydration store
+  types/            Domain interfaces
 ```
+
+---
+
+## Public vs gated routes
+
+This is the one behavioural change the Next migration introduced, and it
+is deliberate. Server rendering only pays for itself if a crawler can
+reach the page, so the browsable surface is now public:
+
+| Path            | Rendering            | Auth   |
+|-----------------|----------------------|--------|
+| `/catalog`      | Server, per-request  | Public |
+| `/parts/[id]`   | Static (SSG) + ISR   | Public |
+| `/gallery`      | Static + ISR         | Public |
+| `/heritage`     | Static               | Public |
+| `/configure`    | Client-only (no SSR) | Gated  |
+| `/admin`        | Client-only (no SSR) | Gated  |
+| `/login`        | Static, `noindex`    | Public |
+
+`/configure` and `/admin` are wrapped in `<RequireAuth>`, a client-side
+gate — the session is in-memory by design, so the server cannot know who
+is signed in. Everything else renders on the server with real
+`<title>`/`<meta>`, part pages emit Product JSON-LD, and `sitemap.ts`
+lists the indexable set.
+
+The configurator is loaded with `dynamic(..., { ssr: false })`. It is
+WebGL from the first frame, so there is no HTML for a server to produce
+and three touches `window` at module scope.
 
 ---
 
@@ -45,74 +78,125 @@ src/
 `AuthContext` exposes `{ user, isAuthenticated, signIn, signOut }`. The
 current `signIn` checks a hardcoded credential pair.
 
-**To swap to OAuth/JWT:**
+**To swap to OAuth/JWT:** replace the body of `signIn`, keeping the
+return type (`Promise<boolean>`) and the shape of `AuthUser`.
+`LoginPage` and `RequireAuth` need no changes.
 
-- Replace the body of `signIn` in `AuthContext.tsx` with your provider
-  call. Keep the return type (`Promise<boolean>`) and the shape of
-  `AuthUser`.
-- `LoginPage` and `ProtectedRoute` need no changes.
+### 2. Data (`src/server/queries.ts`)
 
-### 2. Data (`src/services/`)
+This is now Postgres. `db/schema.sql` defines three tables:
 
-Every data read in the app goes through one of three services:
+- `parts` — the catalog. Money is integer cents; `render_hint` is JSONB
+  so a new part category needs no migration.
+- `wheel_fitment` — one row per wheel, keyed to `parts.id`. Bolt
+  pattern, offset, width, diameter, tire size and centre bore are
+  columns, not prose, so "will it fit" is a query.
+- `builds` — community builds. The whole `CarConfig` lives in one JSONB
+  column, the same shape that round-trips through the `?build=` link.
 
-- `partsService.getAllParts() / getPartById() / getPartsByCategory() / searchParts()`
-- `galleryService.getAllBuilds() / getBuildById()`
-- `buildService.resolveConfig() / encodeConfig() / decodeConfig() / buildShareUrl()`
+**Every query falls back to the bundled JSON** (`src/data/fallbackCatalog.ts`)
+when `DATABASE_URL` is unset or Postgres is unreachable. That is what
+lets a fresh clone run with no database and keeps the catalog rendering
+during an outage. `db/seed.mjs` seeds from those same JSON files, so the
+fallback and a freshly seeded database never disagree.
 
-Today these read from JSON in `src/data/`. **To swap to an API (Turn 14,
-ECS, your own backend):** change the implementation of the service —
-the function signatures are the contract. Pages and components don't
-import JSON anywhere.
+Server components import `@/server/queries` directly — no HTTP hop. The
+client store (`src/services/partsStore.ts`) keeps the old synchronous
+`getPartById()` API because the 3D scene resolves parts during render;
+a server component fetches once and `<CatalogHydrator>` fills the store
+before any consumer reads it.
+
+```bash
+npm run db:schema   # apply schema.sql (idempotent)
+npm run db:seed     # upsert the catalog (idempotent)
+npm run db:verify   # run schema + seed + the app's real SELECTs in-memory
+```
+
+`db:verify` uses pg-mem, so SQL can be checked without a server. It
+reads `PART_SELECT`/`BUILD_SELECT` straight out of `queries.ts` so the
+test cannot drift from the shipped query text.
 
 ### 3. 3D Model (`src/configurator/models/`)
 
-The configurator scene mounts a single car component that consumes the
-current `CarConfig` from context. The default is `<RealCar />` which loads
-**"BMW M3 E30" by Artem P** from Sketchfab (CC BY 4.0, attributed in the
-footer + scene overlay).
-
-**The contract** (see `models/types.ts`) is conceptual: whatever model
-you mount must respect the config's:
-
-- `paintId` → drives body material color & metallic
-- `wheelId` → 4 wheels at the corners reflect the chosen style
-- `exhaustId` → tip mesh behind rear bumper reflects the chosen style
-- `stickerId` → side decal reflects the chosen sticker
-- `rideHeight` → body Y-offset
+Unchanged: mount a component that respects `paintId`, `wheelId`,
+`exhaustId`, `stickerId` and `rideHeight`. See `models/types.ts` and the
+`RealCar` notes below.
 
 **RealCar implementation notes:**
 
-- Loads `/public/models/e30/scene.gltf` (multi-file glTF, ~27MB total).
-- Hides the GLB's wheels, brake discs, axles, suspension, and exhaust;
-  captures the wheel-hub world positions before hiding so our procedural
-  `<Wheel>` components anchor at the same X/Z. This keeps the wheel-style
-  swap UX wired to real geometry choices.
-- Recolors the shared `body` material in place (one mutation recolors all
-  24 body panels). The material is *cloned* on first mount so the drei
-  GLB cache isn't permanently mutated.
-- Auto-scales by bounding box to a 4.32m target length, so model-unit
-  variations don't require manual tweaking.
-- Side decals (`<BodyDecal>`) are deliberately *not* applied on the real
-  car: flat planes don't conform to curved doors. v2 work: use
-  `THREE.DecalGeometry` projected onto the side panel meshes.
+- Loads `/public/models/e30_v3.glb` (Meshopt-compressed).
+- Hides the GLB's wheels, discs, axles and exhaust, capturing hub world
+  positions first so the procedural `<Wheel>` components anchor to real
+  geometry.
+- Recolors the shared `body` material in place, cloned on first mount so
+  the drei GLB cache is not permanently mutated.
+- Auto-scales by bounding box to a 4.32 m target length.
+- Side decals are projected with `THREE.DecalGeometry`.
 
-**Fallback:** `PlaceholderCar.tsx` remains in the repo and works
-standalone — useful while iterating offline or for capturing a
-deterministic non-textured screenshot. To use it, swap the import in
-`Scene.tsx`.
+---
 
-**To swap to a different GLB:**
+## Rendering
 
-1. Drop the new model into `/public/models/<name>/`.
-2. Update `MODEL_URL` in `RealCar.tsx`.
-3. Adjust `HIDDEN_GROUPS` and `WHEEL_ANCHOR` regexes to match the new
-   model's node names. Use `python3 /tmp/inspect_gltf.py` (or `npx
-   gltfjsx`) to discover them.
-4. Update the footer + scene-overlay attribution to match the new
-   author + license.
+### Backends
 
-The sidebar, summary panel, and routing are untouched.
+`src/configurator/renderer/` selects between WebGL 2 (default) and
+WebGPU. React Three Fiber 9 accepts a promise-returning `gl` factory,
+which is what lets the WebGPU adapter handshake finish before the first
+frame; if it fails the factory returns a WebGLRenderer rather than
+letting the canvas throw.
+
+WebGPU is **opt-in**: the toggle only appears when `navigator.gpu`
+exists, and `?renderer=webgpu` forces it. Two things to know:
+
+- Selecting WebGPU selects a *pipeline*, not just an API — materials
+  compile through the node/TSL system. Anything that patches GLSL by
+  hand breaks. `MeshReflectorMaterial` is the one in this codebase, so
+  `ProShowroom` swaps it for a plain metallic standard material under
+  WebGPU.
+- Verified only as far as initialisation: the renderer reports a true
+  WebGPU backend. The scene under WebGPU has **not** been visually
+  confirmed. Keep the default on WebGL until it has.
+
+### Environments and baked IBL
+
+Each scene's lighting comes from a baked equirectangular HDR in
+`public/hdr/`, applied by `<BakedEnvironment>`. It replaced
+`<Environment frames={Infinity}>`, which re-rendered a cubemap probe
+every frame for a set of lights that never move.
+
+`<BakedEnvironment>` loads in an effect and attaches the pre-filtered
+map when it arrives, rather than suspending. drei's `<Environment files>`
+suspends the whole scene subtree — including every light in it — so any
+stall there leaves the studio on its loading fallback with an unlit car.
+
+The maps are generated, not downloaded: `scripts/generate-hdri.mjs`
+ray-traces each room analytically (same dimensions, same ceiling strips
+as the visible geometry) so reflections line up with what the camera
+sees. Surfaces are described as a hue tint plus an absolute radiance
+level — they are most of the solid angle around the car, so describing
+them as "dark grey × ambient" measures out almost black.
+
+### Assets
+
+```bash
+npm run assets          # transcoder + HDR + KTX2
+npm run assets:verify   # parse every output with the loaders the browser uses
+```
+
+- `scripts/copy-basis-transcoder.mjs` vendors the Basis transcoder from
+  the installed three into `public/basis/`. drei's `useKTX2` otherwise
+  fetches it from a CDN, which puts a third-party request on the
+  critical path and decouples it from our three version.
+- `scripts/encode-ktx2.mjs` writes `public/textures/floor-alpha.ktx2`,
+  the radial mask that fades the reflective floor at its edges. With
+  KTX-Software's `toktx` on PATH it emits UASTC; otherwise a
+  zstd-supercompressed RGBA8 KTX2 (small over the wire, still
+  uncompressed in VRAM). Install `ktx` and re-run for the real thing.
+
+Assets are served with a one-year immutable cache header. Their
+filenames are **not** content-hashed, so a regenerated asset will not
+invalidate a client cache — hash the filename or bump a query string if
+that matters.
 
 ---
 
@@ -120,67 +204,61 @@ The sidebar, summary panel, and routing are untouched.
 
 ```
 ConfiguratorContext ── reducer ──┐
-                                 ├─→ Scene (reads config) ─→ <PlaceholderCar config={...} />
+                                 ├─→ Scene (reads config) ─→ <RealCar config={...} />
                                  ├─→ Sidebar (reads + dispatches)
                                  └─→ SummaryPanel (reads + resolves prices)
 ```
 
 `CarConfig` (in `types/index.ts`) is the single serializable build state.
-Everything else — selected parts, total cost, screenshot, share link —
-is derived from it. That's why a build can round-trip through a base64
-URL fragment (see `buildService.encodeConfig` / `decodeConfig`).
+The renderer backend deliberately lives outside it: it is a property of
+the machine, not the build, and putting it in `CarConfig` would bake it
+into share links.
 
-## Auth flow
+## API
 
-Routes under `/*` are wrapped in `<ProtectedRoute>`. If unauthenticated,
-it `<Navigate>`s to `/login` and stashes the original path in
-`location.state.from`, so login redirects back where the user was going.
+| Route                    | Purpose                                  |
+|--------------------------|------------------------------------------|
+| `GET /api/parts`         | catalog, filter + sort                   |
+| `GET /api/parts/[id]`    | one part                                 |
+| `GET /api/builds`        | gallery, optional `?tag=`                |
+| `GET /api/builds/[id]`   | one build                                |
+| `GET /api/fitment/wheels`| fitment query + facet counts             |
+| `GET /api/healthz`       | status, database reachability, features  |
+| `POST /api/match-part`   | Gemini Vision photo match                |
+| `POST /api/generate-part`| Gemini Vision parametric part spec       |
+| `POST /api/generate-3d`  | Tripo3D image-to-3D, billboard fallback  |
 
-Session is in-memory by design (per spec). Refreshing the page sends the
-user back to login.
+Server components skip these and query `@/server/queries` directly.
 
-## Routing
+## Deployment
 
-| Path         | Page                | Notes                                      |
-|--------------|---------------------|--------------------------------------------|
-| `/login`     | `LoginPage`         | Public                                     |
-| `/configure` | `ConfiguratorPage`  | Default after sign-in. Decodes `?build=`.  |
-| `/gallery`   | `GalleryPage`       | Click a build → loads into configurator    |
-| `/catalog`   | `CatalogPage`       | Browse all parts, filter & sort            |
-| `/`          | redirect → /configure |                                          |
+The same tree deploys two ways:
 
-## Sharing builds
+- **Vercel** — zero config. Set `DATABASE_URL` (point it at the Railway
+  Postgres public URL), `NEXT_PUBLIC_SITE_URL`, and the API keys.
+- **Railway / Docker** — `Dockerfile` builds with
+  `NEXT_OUTPUT=standalone` and runs `node server.js` from the standalone
+  bundle. `railway.json` probes `/api/healthz`.
 
-`SummaryPanel` → "Share" button:
-
-1. `encodeConfig(config)` → base64 string
-2. `${origin}/configure?build=<encoded>` is copied to clipboard
-3. Receiving end: `ConfiguratorPage` reads `?build=` on mount, decodes,
-   and dispatches `loadConfig`. The query param is then stripped to keep
-   the URL clean.
-
-## Production runtime
-
-`server.js` is an Express static server with SPA fallback and a
-`/healthz` endpoint that Railway probes. The `Dockerfile` is a standard
-two-stage build: install + `vite build` in stage 1, copy `dist/` and
-runtime deps to a fresh Node image in stage 2.
+`/api/generate-3d` polls Tripo3D for up to three minutes and declares
+`maxDuration = 300`. Vercel caps that by plan (60s on Hobby); a Docker
+deploy has no cap.
 
 ## Adding a new part category
 
 1. Add the slug to `PartCategory` in `types/index.ts`.
-2. Add records in `data/partsCatalog.json`. Use the `renderHint` field
-   for any 3D-relevant data (color, style key, etc.).
+2. Add rows to `data/partsCatalog.json`, then `npm run db:seed`.
 3. Create the swap component in `configurator/parts/<NewCategory>.tsx`.
-4. Mount it inside `PlaceholderCar.tsx` at the right anchor.
+4. Mount it inside `RealCar.tsx` at the right anchor.
 5. Add a panel section in `Sidebar.tsx`.
 
 ## Things deliberately not done (and why)
 
 - **No localStorage / sessionStorage.** Spec says auth is in-memory.
-- **No real GLB.** Spec says placeholder primitives — the scaffolding is
-  what matters until the model file is sourced.
-- **No backend, no auth provider.** Same reason — clean swap point now,
-  defer the bake-off later.
-- **No tests.** This is a polished POC; add a Vitest setup the day you
-  get a real model and a real auth provider.
+  This is also why the auth gate is client-side.
+- **No auth provider.** Clean swap point now, bake-off later.
+- **No tests.** `npm run db:verify` and `npm run assets:verify` cover the
+  two areas where a silent failure is expensive (SQL, binary assets).
+  Add Vitest the day you get a real auth provider.
+- **`next dev`'s CLAUDE.md generator is off** (`agentRules: false` in
+  `next.config.mjs`) — it appends to this hand-maintained file.

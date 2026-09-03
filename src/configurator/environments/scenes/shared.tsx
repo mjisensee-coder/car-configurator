@@ -1,5 +1,3 @@
-import { Lightformer } from '@react-three/drei';
-
 /**
  * Shared building blocks for the procedural showroom scenes.
  *
@@ -9,11 +7,10 @@ import { Lightformer } from '@react-three/drei';
  * automatically get back-face culling, so when the camera dollies past a
  * wall, the wall disappears and the camera sees the scene background.
  *
- * Lightformer ceiling strips are the visual signature of a car-show
- * environment. They're long thin emissive rectangles mounted overhead,
- * baked into the IBL probe via drei's `<Environment>` so the car body's
- * paint reflects them as horizontal streaks. This is THE element that
- * makes a real-time scene feel like a magazine shot.
+ * Ceiling strips are the visual signature of a car-show environment, but
+ * they no longer live here: they are baked into the HDR environment maps
+ * by scripts/generate-hdri.mjs, and each scene draws matching emissive
+ * boxes so the camera sees what the reflections show.
  */
 
 interface RoomShellProps {
@@ -72,61 +69,6 @@ export function RoomShell({
         <meshStandardMaterial color={ceilingColor} roughness={0.85} metalness={0.05} />
       </mesh>
     </group>
-  );
-}
-
-/**
- * A row of horizontal Lightformer strips across the ceiling. These are
- * what produce the signature horizontal highlights on the car body.
- *
- * Place these as children of an `<Environment>` so they get baked into
- * the IBL probe — that's how the car paint actually picks them up as
- * mirror-quality reflections.
- */
-interface CeilingStripsProps {
-  /** Y position of the strips (just below the ceiling). */
-  height: number;
-  /** Length along X axis (how long each strip runs). */
-  length: number;
-  /** Strip thickness (Z) — slim. */
-  thickness: number;
-  /** Number of parallel strips, evenly spaced along Z. */
-  count: number;
-  /** Total Z spread of the rows. */
-  spread: number;
-  color: string;
-  intensity: number;
-}
-
-export function CeilingStrips({
-  height,
-  length,
-  thickness,
-  count,
-  spread,
-  color,
-  intensity,
-}: CeilingStripsProps) {
-  const items = Array.from({ length: count }, (_, i) => {
-    const t = count === 1 ? 0.5 : i / (count - 1);
-    const z = (t - 0.5) * spread;
-    return { z, key: i };
-  });
-  return (
-    <>
-      {items.map(({ z, key }) => (
-        <Lightformer
-          key={key}
-          form="rect"
-          position={[0, height, z]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          scale={[length, thickness, 1]}
-          color={color}
-          intensity={intensity}
-          target={[0, 0, z]}
-        />
-      ))}
-    </>
   );
 }
 

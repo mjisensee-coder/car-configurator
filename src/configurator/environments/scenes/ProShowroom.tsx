@@ -1,10 +1,9 @@
-import {
-  Environment,
-  Lightformer,
-  MeshReflectorMaterial,
-  ContactShadows,
-} from '@react-three/drei';
-import { CeilingStrips, RoomShell } from './shared';
+import { MeshReflectorMaterial, ContactShadows } from '@react-three/drei';
+import { RoomShell } from './shared';
+import { HDR_FILES } from '../assets';
+import { BakedEnvironment } from '../BakedEnvironment';
+import { useFloorMask } from '../useFloorMask';
+import { useRenderer } from '../../renderer/RendererContext';
 
 /**
  * Pro Showroom — the default environment.
@@ -12,16 +11,18 @@ import { CeilingStrips, RoomShell } from './shared';
  * Sleek automotive showroom built from primitives:
  *   - Polished concrete floor with high-quality real-time reflections.
  *   - 30×20×8m rectangular room with charcoal walls.
- *   - 4 long horizontal Lightformer strips across the ceiling — the
- *     SIGNATURE element that paints horizontal highlights onto the car
- *     body the way a real car-show floor does.
+ *   - 4 long horizontal ceiling strips — the SIGNATURE element that paints
+ *     horizontal highlights onto the car body the way a real car-show
+ *     floor does.
  *   - Bright dealer-floor lighting overall (not moody/dramatic).
  *
- * The Lightformers live as children of `<Environment background={false}>`
- * so they get baked into the IBL probe and the car body picks them up
- * as mirror-quality reflections — not just diffuse light. The visible
- * ceiling-strip geometry is a separate, matching set of emissive boxes
- * so the camera sees the same lights overhead.
+ * Lighting comes from a baked HDR environment map rather than live
+ * Lightformers: scripts/generate-hdri.mjs ray-traces this same room into
+ * public/hdr/studio.hdr, so the body picks the strips up as
+ * mirror-quality reflections without the renderer re-rendering a cubemap
+ * probe every frame. The visible ceiling-strip geometry below is a
+ * separate, matching set of emissive boxes so the camera sees the same
+ * lights overhead.
  *
  * Lighting intent: BRIGHTLY-LIT dealer showroom floor. If you find
  * yourself wanting more shadow / mood, that's the Night Display
@@ -34,59 +35,22 @@ const ROOM_H = 8;
 const STRIP_Z = [-4.5, -1.5, 1.5, 4.5];
 
 export function ProShowroom() {
+  const floorMask = useFloorMask();
+  const { backend } = useRenderer();
+
   return (
     <>
       <color attach="background" args={['#161620']} />
 
-      {/* IBL: Lightformers baked into the env probe → car body picks them
-          up as bright horizontal streaks across painted panels. */}
-      <Environment frames={Infinity} resolution={256} background={false}>
-        <CeilingStrips
-          height={ROOM_H - 0.05}
-          length={10}
-          thickness={0.3}
-          count={4}
-          spread={12}
-          color="#ffffff"
-          intensity={8}
-        />
-        {/* Cool rim light behind the car for shoulder separation */}
-        <Lightformer
-          form="rect"
-          position={[0, 3, -8]}
-          scale={[6, 1.5, 1]}
-          color="#cfe4ff"
-          intensity={3}
-        />
-        {/* Side fill — softer, warmer */}
-        <Lightformer
-          form="ring"
-          position={[6, 4, 4]}
-          scale={4}
-          color="#fff0d4"
-          intensity={2.2}
-        />
-        {/* Opposite-side fill for symmetry on hero shots */}
-        <Lightformer
-          form="ring"
-          position={[-6, 4, 4]}
-          scale={4}
-          color="#fff0d4"
-          intensity={2.2}
-        />
-        {/* Soft overhead dome — fills shadow areas so the car doesn't
-            crush to black on the underside. */}
-        <Lightformer
-          form="rect"
-          position={[0, 7.5, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          scale={[20, 20, 1]}
-          color="#ffffff"
-          intensity={1.2}
-        />
-      </Environment>
+      {/* IBL: a baked equirectangular map of this exact room
+          (scripts/generate-hdri.mjs traces the same 30×20×8 m box and the
+          same four ceiling strips). It replaced a <Environment
+          frames={Infinity}> probe that re-rendered a cubemap every frame —
+          the strips are static, so there was nothing to re-render. */}
+      <BakedEnvironment file={HDR_FILES.showroom} />
 
-      {/* Visible ceiling strips that match the IBL Lightformers */}
+      {/* Visible ceiling strips — these match the strips baked into
+          public/hdr/studio.hdr, so reflection and geometry agree. */}
       <group>
         {STRIP_Z.map((z, i) => (
           <mesh key={i} position={[0, ROOM_H - 0.06, z]}>
@@ -111,22 +75,44 @@ export function ProShowroom() {
         ceilingColor="#1c1c22"
       />
 
-      {/* Polished concrete reflective floor */}
+      {/* Polished concrete floor.
+
+          MeshReflectorMaterial patches GLSL through onBeforeCompile, which
+          the WebGPU pipeline's node materials never see — under that
+          backend it renders untextured. So the reflective version is used
+          on WebGL and a plain metallic standard material stands in on
+          WebGPU. Both share the KTX2 alpha mask, so the floor fades out at
+          the room edges either way. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[ROOM_W * 1.2, ROOM_D * 1.2]} />
-        <MeshReflectorMaterial
-          mirror={0.75}
-          blur={[400, 100]}
-          resolution={1024}
-          mixBlur={1}
-          mixStrength={0.6}
-          roughness={0.4}
-          depthScale={1.2}
-          minDepthThreshold={0.85}
-          maxDepthThreshold={1}
-          color="#101015"
-          metalness={0.5}
-        />
+        {backend === 'webgpu' ? (
+          <meshStandardMaterial
+            alphaMap={floorMask}
+            transparent
+            color="#101015"
+            metalness={0.85}
+            roughness={0.18}
+          />
+        ) : (
+          <MeshReflectorMaterial
+            // KTX2 radial mask — fades the mirror out toward the room edges
+            // so the plane reads as an endless floor instead of a rectangle
+            // with visible corners.
+            alphaMap={floorMask}
+            transparent
+            mirror={0.75}
+            blur={[400, 100]}
+            resolution={1024}
+            mixBlur={1}
+            mixStrength={0.6}
+            roughness={0.4}
+            depthScale={1.2}
+            minDepthThreshold={0.85}
+            maxDepthThreshold={1}
+            color="#101015"
+            metalness={0.5}
+          />
+        )}
       </mesh>
 
       {/* Tight contact shadow under the car */}

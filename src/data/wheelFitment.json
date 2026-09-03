@@ -1,0 +1,43 @@
+{
+  "_comment": "Wheel fitment specs, keyed by part id. E30 hub: 4x100 PCD, 57.1mm centre bore. Offsets are period-plausible for each wheel; verify against a vendor spec sheet before quoting them as fitment advice.",
+  "wheels-bbs-rs": {
+    "boltPattern": "4x100",
+    "offsetMm": 20,
+    "widthInches": 8,
+    "diameterInches": 16,
+    "tireSize": "205/45R16",
+    "centerBoreMm": 57.1,
+    "stance": "square",
+    "notes": "Two-piece 16x8 ET20. Needs a mild fender roll on a lowered car."
+  },
+  "wheels-ronal-lsi": {
+    "boltPattern": "4x100",
+    "offsetMm": 25,
+    "widthInches": 7,
+    "diameterInches": 15,
+    "tireSize": "195/50R15",
+    "centerBoreMm": 57.1,
+    "stance": "square",
+    "notes": "Classic 15x7 ET25. Clears stock and short-spring setups."
+  },
+  "wheels-mtech-bottle": {
+    "boltPattern": "4x100",
+    "offsetMm": 35,
+    "widthInches": 7,
+    "diameterInches": 15,
+    "tireSize": "195/50R15",
+    "centerBoreMm": 57.1,
+    "stance": "square",
+    "notes": "Factory M-Tech offset. Tucks slightly; no fender work needed."
+  },
+  "wheels-borbet-a": {
+    "boltPattern": "4x100",
+    "offsetMm": 13,
+    "widthInches": 8,
+    "diameterInches": 17,
+    "tireSize": "205/40R17",
+    "centerBoreMm": 57.1,
+    "stance": "square",
+    "notes": "Aggressive 17x8 ET13. Expect to roll and pull the rear arches."
+  }
+}

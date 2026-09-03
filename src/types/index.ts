@@ -12,6 +12,54 @@ export type PartCategory =
 
 export type Vendor = 'ECS Tuning' | 'Turner Motorsport' | 'IND Distribution';
 
+/**
+ * Wheel fitment spec. Present only on parts in the `wheels` category.
+ *
+ * These are the fields that decide whether a wheel physically bolts to the
+ * car, so they are stored as columns in `wheel_fitment` (not buried in
+ * `renderHint`) and are filterable through `/api/fitment/wheels`.
+ */
+export interface WheelFitment {
+  /** Pitch circle diameter, e.g. '4x100' — the E30 pattern. */
+  boltPattern: string;
+  /** ET in millimetres. Positive means the mounting face sits outboard. */
+  offsetMm: number;
+  widthInches: number;
+  diameterInches: number;
+  /** Fitted tire, e.g. '205/45R16'. */
+  tireSize: string;
+  /** Hub bore in millimetres. The E30 hub is 57.1. */
+  centerBoreMm?: number;
+  stance?: 'square' | 'staggered';
+  notes?: string;
+}
+
+/** Catalog query shape. Shared by the client store and the SQL layer. */
+export interface PartFilter {
+  category?: PartCategory;
+  search?: string;
+  maxPrice?: number;
+}
+
+export type SortKey = 'price-asc' | 'price-desc' | 'name';
+
+/** Fitment query shape backing `/api/fitment/wheels`. */
+export interface FitmentFilter {
+  boltPattern?: string;
+  diameterInches?: number;
+  widthInches?: number;
+  minOffsetMm?: number;
+  maxOffsetMm?: number;
+}
+
+/** Counts per distinct value, for building filter UI that never dead-ends. */
+export interface FitmentFacets {
+  boltPattern: Array<{ value: string; count: number }>;
+  diameterInches: Array<{ value: number; count: number }>;
+  widthInches: Array<{ value: number; count: number }>;
+  tireSize: Array<{ value: string; count: number }>;
+}
+
 export interface Part {
   id: string;
   category: PartCategory;
@@ -24,6 +72,8 @@ export interface Part {
   affiliateUrl: string;
   /** Optional render hint consumed by the 3D scene (color hex, wheel style key, etc.) */
   renderHint?: Record<string, string | number>;
+  /** Populated for `wheels` parts only — joined from `wheel_fitment`. */
+  fitment?: WheelFitment;
 }
 
 export interface PaintOption {

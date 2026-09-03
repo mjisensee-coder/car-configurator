@@ -1,18 +1,27 @@
+'use client';
+
 import { useState, type FormEvent } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import { E30 } from '@/data/imageLibrary';
 
 export function LoginPage() {
   const { signIn } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const redirectTo = (location.state as { from?: string } | null)?.from ?? '/configure';
+  // `?from=` is set by <RequireAuth> when it bounces an unauthenticated
+  // visitor here. Only same-site paths are honoured, so a crafted
+  // `?from=https://evil.example` cannot turn login into an open redirect.
+  const requestedFrom = searchParams.get('from');
+  const redirectTo =
+    requestedFrom && requestedFrom.startsWith('/') && !requestedFrom.startsWith('//')
+      ? requestedFrom
+      : '/configure';
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -21,7 +30,7 @@ export function LoginPage() {
     const ok = await signIn(username, password);
     setSubmitting(false);
     if (ok) {
-      navigate(redirectTo, { replace: true });
+      router.replace(redirectTo);
     } else {
       setError('Invalid credentials. Try again.');
     }
