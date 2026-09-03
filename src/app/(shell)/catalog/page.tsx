@@ -3,35 +3,17 @@ import { searchParts } from '@/server/queries';
 import { CatalogFilters } from '@/catalog/CatalogFilters';
 import { PartCard } from '@/catalog/PartCard';
 import { CatalogHero } from '@/catalog/CatalogHero';
+import { parseCatalogParams } from '@/catalog/searchParams';
 import { Footer } from '@/components/Footer';
-import { CATEGORIES } from '@/services/partsService';
-import type { PartCategory, SortKey } from '@/types';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-const SORTS: SortKey[] = ['name', 'price-asc', 'price-desc'];
-
-/** Query strings are user input — coerce them into the domain types. */
-function parseParams(raw: Record<string, string | string[] | undefined>) {
-  const one = (v: string | string[] | undefined) =>
-    (Array.isArray(v) ? v[0] : v) ?? '';
-  const rawCategory = one(raw.category);
-  const rawSort = one(raw.sort) as SortKey;
-  return {
-    category: (CATEGORIES as string[]).includes(rawCategory)
-      ? (rawCategory as PartCategory)
-      : ('all' as const),
-    search: one(raw.q).slice(0, 100),
-    sort: SORTS.includes(rawSort) ? rawSort : ('name' as SortKey),
-  };
-}
 
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: SearchParams;
 }): Promise<Metadata> {
-  const { category, search } = parseParams(await searchParams);
+  const { category, search } = parseCatalogParams(await searchParams);
   const scope = category === 'all' ? 'parts' : category;
   const title = search
     ? `${search} — E30 ${scope}`
@@ -54,7 +36,7 @@ export default async function CatalogPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { category, search, sort } = parseParams(await searchParams);
+  const { category, search, sort } = parseCatalogParams(await searchParams);
 
   // Both queries run on the server against Postgres. The grid below is
   // therefore in the initial HTML — no client fetch, no loading state.

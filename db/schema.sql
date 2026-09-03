@@ -41,7 +41,10 @@ CREATE TABLE IF NOT EXISTS wheel_fitment (
   diameter_inches NUMERIC(4,1) NOT NULL,
   tire_size       TEXT         NOT NULL,   -- e.g. '205/45R16'
   center_bore_mm  NUMERIC(5,2),            -- E30 hub is 57.1
-  stance          TEXT CHECK (stance IN ('square', 'staggered')),
+  -- Explicit about NULL rather than leaning on three-valued logic:
+  -- `NULL IN (...)` is NULL, which a CHECK happens to accept, but spelling
+  -- it out states the intent and behaves the same on every engine.
+  stance          TEXT CHECK (stance IS NULL OR stance IN ('square', 'staggered')),
   notes           TEXT
 );
 

@@ -12,6 +12,7 @@ This file is for engineers (and Claude) extending the codebase.
 
 - Next.js 16 (App Router) + React 19
 - Postgres via `pg`, with a bundled-JSON fallback
+- Vitest for tests, pg-mem for SQL without a server
 - React Three Fiber 9 + drei 10 + three 0.185 for the 3D scene
 - Tailwind CSS for styling
 - html2canvas for build screenshots
@@ -20,8 +21,9 @@ This file is for engineers (and Claude) extending the codebase.
 ## Top-level layout
 
 ```
-db/                 schema.sql + operational scripts (apply, seed, verify)
+db/                 schema.sql + operational scripts (apply, seed)
 scripts/            asset pipeline (HDR baking, KTX2 encoding, transcoder)
+tests/              Vitest suite — see tests/README.md for scope
 src/
   app/              App Router — routes, layouts, API route handlers
     (shell)/        everything inside the NavBar chrome
@@ -109,12 +111,17 @@ before any consumer reads it.
 ```bash
 npm run db:schema   # apply schema.sql (idempotent)
 npm run db:seed     # upsert the catalog (idempotent)
-npm run db:verify   # run schema + seed + the app's real SELECTs in-memory
+npm run db:verify   # schema + seed + the app's real SELECTs, in-memory
 ```
 
-`db:verify` uses pg-mem, so SQL can be checked without a server. It
-reads `PART_SELECT`/`BUILD_SELECT` straight out of `queries.ts` so the
-test cannot drift from the shipped query text.
+`db:verify` runs `tests/database.test.ts` against pg-mem, so the SQL can
+be checked without a server. It parses `PART_SELECT`/`BUILD_SELECT` out
+of `queries.ts` rather than copying them, so editing a join without
+updating the test fails the test.
+
+One pg-mem divergence is worked around in the schema: it treats
+`NULL IN (...)` inside a CHECK as a violation where Postgres accepts it,
+so `wheel_fitment.stance` spells out `stance IS NULL OR stance IN (...)`.
 
 ### 3. 3D Model (`src/configurator/models/`)
 
@@ -179,7 +186,7 @@ them as "dark grey × ambient" measures out almost black.
 ### Assets
 
 ```bash
-npm run assets          # transcoder + HDR + KTX2
+npm run assets          # transcoder + HDR + KTX2, then verify
 npm run assets:verify   # parse every output with the loaders the browser uses
 ```
 
@@ -226,7 +233,7 @@ into share links.
 | `GET /api/healthz`       | status, database reachability, features  |
 | `POST /api/match-part`   | Gemini Vision photo match                |
 | `POST /api/generate-part`| Gemini Vision parametric part spec       |
-| `POST /api/generate-3d`  | Tripo3D image-to-3D, billboard fallback  |
+| `POST /api/generate-3d`  | image-to-3D: fal.ai → Tripo3D → billboard |
 
 Server components skip these and query `@/server/queries` directly.
 
@@ -240,9 +247,41 @@ The same tree deploys two ways:
   `NEXT_OUTPUT=standalone` and runs `node server.js` from the standalone
   bundle. `railway.json` probes `/api/healthz`.
 
-`/api/generate-3d` polls Tripo3D for up to three minutes and declares
-`maxDuration = 300`. Vercel caps that by plan (60s on Hobby); a Docker
-deploy has no cap.
+`/api/generate-3d` polls its upstream for up to three minutes and
+declares `maxDuration = 300`. Vercel caps that by plan (60s on Hobby); a
+Docker deploy has no cap.
+
+It also writes generated GLBs into `public/generated-parts/` so an
+approved part survives the upstream URL expiry. Serverless filesystems
+are read-only, so that write is best-effort: on failure the route serves
+the upstream URL and says so in `note` rather than failing the job.
+
+## Testing
+
+```bash
+npm test            # 139 tests, ~1s, no browser or database needed
+npm run test:watch
+```
+
+Eight files under `tests/`, all in plain Node:
+
+| Area | What it pins down |
+|---|---|
+| Share links | Encode/decode round trip and every malformed-link case |
+| Catalog params | Query-string coercion — untrusted input that reaches an ORDER BY |
+| Parts store | The seed-then-hydrate contract the 3D scene relies on |
+| Queries | The JSON fallback path, which an outage and a fresh clone both hit |
+| Database | Real schema, real seed, real SELECT text against in-memory Postgres |
+| API | Route handler shapes, status codes, cache headers, validation |
+| 3D backends | fal.ai → Tripo3D → billboard selection and degradation |
+| Assets | RGBE encoder round trip plus every generated file, parsed with the browser's own loaders |
+
+The asset tests exist because a broken encoder is invisible to code
+review — a bad RLE run just shows up as a black showroom. They parse each
+`.hdr` with both three's `HDRLoader` and three-stdlib's `RGBELoader`,
+since drei's `<Environment>` uses the latter.
+
+`tests/README.md` records what is deliberately out of scope and why.
 
 ## Adding a new part category
 
@@ -257,8 +296,10 @@ deploy has no cap.
 - **No localStorage / sessionStorage.** Spec says auth is in-memory.
   This is also why the auth gate is client-side.
 - **No auth provider.** Clean swap point now, bake-off later.
-- **No tests.** `npm run db:verify` and `npm run assets:verify` cover the
-  two areas where a silent failure is expensive (SQL, binary assets).
-  Add Vitest the day you get a real auth provider.
+- **No component or browser tests.** The Vitest suite covers logic, SQL,
+  the route handlers and the asset encoders — see the Testing section.
+  Components and the 3D scene need a real browser, so the next step there
+  is Playwright against `npm start`, not a jsdom harness that asserts
+  mocks were called.
 - **`next dev`'s CLAUDE.md generator is off** (`agentRules: false` in
   `next.config.mjs`) — it appends to this hand-maintained file.
