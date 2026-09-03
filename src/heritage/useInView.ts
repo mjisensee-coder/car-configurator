@@ -14,8 +14,9 @@ import { useEffect, useRef, useState } from 'react';
  */
 export function useInView<T extends HTMLElement = HTMLElement>(
   rootMargin: string = '0px 0px -10% 0px',
-): { ref: React.RefObject<T>; inView: boolean } {
-  // `useRef<T>(null)` returns RefObject<T>, the shape JSX `ref` expects.
+): { ref: React.RefObject<T | null>; inView: boolean } {
+  // React 19 types `useRef<T>(null)` as RefObject<T | null>, and JSX `ref`
+  // accepts that directly — so the nullable type is what callers want.
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
 

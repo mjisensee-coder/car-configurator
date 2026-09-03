@@ -1,6 +1,4 @@
 import {
-  Environment,
-  Lightformer,
   ContactShadows,
   MeshReflectorMaterial,
 } from '@react-three/drei';
@@ -8,6 +6,8 @@ import {
   SketchfabSceneFallback,
   useClonedSceneFromUrl,
 } from './SketchfabSceneFallback';
+import { HDR_FILES } from '../assets';
+import { BakedEnvironment } from '../BakedEnvironment';
 
 /**
  * LED Studio — "Studio V1 For Car" by Velocity Motion (Sketchfab, CC BY 4.0).
@@ -28,41 +28,9 @@ export function LedStudio() {
     <>
       <color attach="background" args={['#0a0a0e']} />
 
-      {/* Cool-white IBL keeps body specular crisp regardless of GLB state. */}
-      <Environment frames={Infinity} resolution={256} background={false}>
-        <Lightformer
-          form="rect"
-          position={[0, 5, 4]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          scale={[8, 0.4, 1]}
-          color="#ffffff"
-          intensity={4}
-        />
-        <Lightformer
-          form="rect"
-          position={[0, 5, -4]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          scale={[8, 0.4, 1]}
-          color="#ffffff"
-          intensity={4}
-        />
-        <Lightformer
-          form="rect"
-          position={[5, 4, 0]}
-          rotation={[0, -Math.PI / 2, 0]}
-          scale={[0.4, 1.5, 8]}
-          color="#aac4e8"
-          intensity={2}
-        />
-        <Lightformer
-          form="rect"
-          position={[-5, 4, 0]}
-          rotation={[0, Math.PI / 2, 0]}
-          scale={[0.4, 1.5, 8]}
-          color="#ffd6a3"
-          intensity={2}
-        />
-      </Environment>
+      {/* Cool-white baked IBL keeps body specular crisp regardless of
+          GLB state. */}
+      <BakedEnvironment file={HDR_FILES['led-studio']} />
 
       <SketchfabSceneFallback
         url={MODEL_URL}

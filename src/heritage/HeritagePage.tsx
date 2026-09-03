@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
 import { Footer } from '@/components/Footer';
 import { useInView } from './useInView';
 
@@ -64,7 +66,7 @@ function Hero() {
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
-            to="/configure"
+            href="/configure"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-accent to-accent-hot hover:shadow-glow text-white font-semibold px-7 py-3.5 rounded-lg transition-all"
           >
             Build Your Dream E30
@@ -422,7 +424,7 @@ function BuildYoursCTA() {
           shop.
         </p>
         <Link
-          to="/configure"
+          href="/configure"
           className="mt-9 inline-flex items-center gap-2 bg-gradient-to-r from-accent to-accent-hot hover:shadow-glow active:scale-[0.99] text-white font-semibold px-9 py-4 rounded-lg transition-all text-lg"
         >
           Open the Studio

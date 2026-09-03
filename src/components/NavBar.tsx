@@ -1,24 +1,34 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/auth/AuthContext';
+
+/**
+ * Top navigation. Client component — it reads auth state and the active
+ * path to draw the underline.
+ *
+ * Catalog, Community and Heritage are public (server-rendered, indexable).
+ * Configure and Admin are gated by <RequireAuth>; following them while
+ * signed out lands on /login and bounces back after sign-in.
+ */
+
+const LINKS = [
+  { href: '/configure', label: 'Configure' },
+  { href: '/gallery', label: 'Community', shortLabel: 'Gallery' },
+  { href: '/heritage', label: 'Heritage' },
+  { href: '/catalog', label: 'Catalog' },
+  { href: '/admin', label: 'Admin' },
+] as const;
 
 export function NavBar() {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-      isActive
-        ? 'text-garage-100'
-        : 'text-garage-300 hover:text-garage-100'
-    }`;
+  const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <header className="h-14 bg-garage-900/95 backdrop-blur border-b border-garage-700 flex items-center px-4 sm:px-5 gap-3 sm:gap-4 sticky top-0 z-40">
-      <button
-        type="button"
-        onClick={() => navigate('/configure')}
-        className="flex items-center gap-2.5 group"
-      >
+      <Link href="/configure" className="flex items-center gap-2.5 group">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-gold flex items-center justify-center group-hover:shadow-glow transition-shadow">
           <svg width="16" height="16" viewBox="0 0 64 64" fill="white">
             <path d="M10 38c0-2 2-4 4-4l6-1 4-7c1-2 3-3 5-3h18c2 0 4 1 5 3l4 7 4 1c2 0 4 2 4 4v6c0 1-1 2-2 2h-6a4 4 0 1 1-8 0H22a4 4 0 1 1-8 0H8c-1 0-2-1-2-2v-6z" />
@@ -30,64 +40,40 @@ export function NavBar() {
             Build Studio
           </div>
         </div>
-      </button>
+      </Link>
 
       <nav className="flex items-center gap-0 ml-2 sm:ml-4">
-        <NavLink to="/configure" className={linkClass}>
-          {({ isActive }) => (
-            <>
-              Configure
+        {LINKS.map((link) => {
+          const isActive =
+            pathname === link.href || pathname.startsWith(`${link.href}/`);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                isActive
+                  ? 'text-garage-100'
+                  : 'text-garage-300 hover:text-garage-100'
+              }`}
+            >
+              {'shortLabel' in link ? (
+                <>
+                  <span className="hidden sm:inline">{link.label}</span>
+                  <span className="sm:hidden">{link.shortLabel}</span>
+                </>
+              ) : (
+                link.label
+              )}
               {isActive && (
                 <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
               )}
-            </>
-          )}
-        </NavLink>
-        <NavLink to="/gallery" className={linkClass}>
-          {({ isActive }) => (
-            <>
-              <span className="hidden sm:inline">Community</span>
-              <span className="sm:hidden">Gallery</span>
-              {isActive && (
-                <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
-              )}
-            </>
-          )}
-        </NavLink>
-        <NavLink to="/heritage" className={linkClass}>
-          {({ isActive }) => (
-            <>
-              Heritage
-              {isActive && (
-                <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
-              )}
-            </>
-          )}
-        </NavLink>
-        <NavLink to="/catalog" className={linkClass}>
-          {({ isActive }) => (
-            <>
-              Catalog
-              {isActive && (
-                <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
-              )}
-            </>
-          )}
-        </NavLink>
-        <NavLink to="/admin" className={linkClass}>
-          {({ isActive }) => (
-            <>
-              Admin
-              {isActive && (
-                <span className="absolute -bottom-[15px] left-2 right-2 h-0.5 bg-gradient-to-r from-accent to-accent-gold rounded-full" />
-              )}
-            </>
-          )}
-        </NavLink>
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
-        {user && (
+        {user ? (
           <>
             <span className="text-xs text-garage-400 hidden md:inline">
               Signed in as{' '}
@@ -98,13 +84,20 @@ export function NavBar() {
             <button
               onClick={() => {
                 signOut();
-                navigate('/login');
+                router.push('/login');
               }}
               className="text-xs text-garage-300 hover:text-accent-hot border border-garage-600 hover:border-accent px-3 py-1.5 rounded-md transition-colors"
             >
               Sign out
             </button>
           </>
+        ) : (
+          <Link
+            href="/login"
+            className="text-xs text-garage-300 hover:text-accent-hot border border-garage-600 hover:border-accent px-3 py-1.5 rounded-md transition-colors"
+          >
+            Sign in
+          </Link>
         )}
       </div>
     </header>

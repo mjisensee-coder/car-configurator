@@ -1,21 +1,29 @@
-import builds from '@/data/communityBuilds.json';
+import { FALLBACK_BUILDS } from '@/data/fallbackCatalog';
 import type { CommunityBuild } from '@/types';
 
 /**
- * Data access for community gallery.
- * Swap this for a real database/API and the rest of the app keeps working.
+ * Client-side data access for the community gallery.
+ *
+ * The gallery page is server-rendered and passes builds down as props, so
+ * these helpers exist for client code that needs a build outside that tree.
+ * Server components should import @/server/queries directly.
  */
 
-const BUILDS: CommunityBuild[] = builds as unknown as CommunityBuild[];
+let builds: CommunityBuild[] = FALLBACK_BUILDS;
+
+export function hydrateBuilds(next: CommunityBuild[] | undefined | null): void {
+  if (!next || next.length === 0) return;
+  builds = next;
+}
 
 export function getAllBuilds(): CommunityBuild[] {
-  return BUILDS;
+  return builds;
 }
 
 export function getBuildById(id: string): CommunityBuild | undefined {
-  return BUILDS.find((b) => b.id === id);
+  return builds.find((b) => b.id === id);
 }
 
 export function getBuildsByTag(tag: string): CommunityBuild[] {
-  return BUILDS.filter((b) => b.tags.includes(tag));
+  return builds.filter((b) => b.tags.includes(tag));
 }

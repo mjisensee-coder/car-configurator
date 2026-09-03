@@ -1,6 +1,4 @@
 import {
-  Environment,
-  Lightformer,
   ContactShadows,
   MeshReflectorMaterial,
 } from '@react-three/drei';
@@ -8,6 +6,8 @@ import {
   SketchfabSceneFallback,
   useClonedSceneFromUrl,
 } from './SketchfabSceneFallback';
+import { HDR_FILES } from '../assets';
+import { BakedEnvironment } from '../BakedEnvironment';
 
 /**
  * Modern Showroom — "Car-Showroom 2" by Polsaris (Sketchfab, CC BY 4.0).
@@ -28,25 +28,9 @@ export function ModernShowroom() {
     <>
       <color attach="background" args={['#1a1a20']} />
 
-      {/* Soft IBL — keeps the car body shaded properly even before the
-          showroom GLB lights it. */}
-      <Environment frames={Infinity} resolution={256} background={false}>
-        <Lightformer
-          form="rect"
-          position={[0, 6, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          scale={[12, 12, 1]}
-          color="#ffffff"
-          intensity={1.8}
-        />
-        <Lightformer
-          form="rect"
-          position={[0, 4, -8]}
-          scale={[8, 2, 1]}
-          color="#aac4e8"
-          intensity={1}
-        />
-      </Environment>
+      {/* Soft baked IBL — keeps the car body shaded properly even before
+          the showroom GLB lights it. */}
+      <BakedEnvironment file={HDR_FILES['modern-showroom']} />
 
       <SketchfabSceneFallback
         url={MODEL_URL}

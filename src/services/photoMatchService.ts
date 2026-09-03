@@ -6,14 +6,14 @@ import { getPartsByCategory } from './partsService';
  *
  * Flow:
  *   1. Caller passes a File or base64 string + a category.
- *   2. We POST to /api/match-part, which is an Express endpoint that
+ *   2. We POST to /api/match-part, a Next route handler that
  *      proxies to Gemini Vision. The API key lives server-side only.
  *   3. Gemini returns a structured JSON analysis of the part in the photo.
  *   4. We score every catalog part in that category against the analysis
  *      and return the top 3 matches with a 0–1 confidence score.
  *
  * Adding a new category: define a `score<Category>` function below, register
- * it in `SCORERS`, and add the corresponding prompt to `server.js`.
+ * it in `SCORERS`, and add the corresponding prompt to `src/server/ai.ts`.
  */
 
 export interface WheelAnalysis {

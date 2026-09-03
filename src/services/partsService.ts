@@ -1,38 +1,35 @@
-import partsCatalog from '@/data/partsCatalog.json';
-import type { Part, PartCategory } from '@/types';
+import type { Part, PartCategory, PartFilter, SortKey } from '@/types';
+import { getPartFromStore, getParts } from './partsStore';
 
 /**
- * Data access layer for parts.
+ * Client-side data access for parts.
  *
- * Today this reads a static JSON. Tomorrow you can swap the implementation
- * for a fetch() against Turn 14, ECS, or your own backend without touching
- * any consumer — the function signatures are the contract.
+ * The signatures are unchanged from the JSON-file version — that was the
+ * contract CLAUDE.md promised, and it is why the 3D scene, sidebar and
+ * summary panel needed no edits when Postgres landed behind them.
+ *
+ * The rows themselves now come from Postgres: a server component queries
+ * src/server/queries.ts and hands the result to <CatalogHydrator>, which
+ * fills the store this module reads. Server components should import
+ * @/server/queries directly instead of using these helpers.
  */
 
-const ALL: Part[] = partsCatalog as unknown as Part[];
+export type { PartFilter, SortKey };
 
 export function getAllParts(): Part[] {
-  return ALL;
+  return getParts();
 }
 
 export function getPartById(id: string): Part | undefined {
-  return ALL.find((p) => p.id === id);
+  return getPartFromStore(id);
 }
 
 export function getPartsByCategory(category: PartCategory): Part[] {
-  return ALL.filter((p) => p.category === category);
+  return getParts().filter((p) => p.category === category);
 }
-
-export interface PartFilter {
-  category?: PartCategory;
-  search?: string;
-  maxPrice?: number;
-}
-
-export type SortKey = 'price-asc' | 'price-desc' | 'name';
 
 export function searchParts(filter: PartFilter, sort: SortKey = 'name'): Part[] {
-  let result = ALL.slice();
+  let result = getParts().slice();
   if (filter.category) {
     result = result.filter((p) => p.category === filter.category);
   }

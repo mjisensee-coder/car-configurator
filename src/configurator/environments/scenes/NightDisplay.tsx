@@ -1,10 +1,10 @@
 import {
   Stars,
   ContactShadows,
-  Environment,
-  Lightformer,
   MeshReflectorMaterial,
 } from '@react-three/drei';
+import { HDR_FILES } from '../assets';
+import { BakedEnvironment } from '../BakedEnvironment';
 
 /**
  * Night Display — dramatic night presentation.
@@ -32,31 +32,9 @@ export function NightDisplay() {
         speed={0.3}
       />
 
-      {/* IBL: dramatic colored Lightformers baked into the env probe so
-          the car body picks up cyan/magenta streaks. */}
-      <Environment frames={Infinity} resolution={256} background={false}>
-        <Lightformer
-          form="rect"
-          position={[5, 6, 4]}
-          scale={[6, 1.5, 1]}
-          color="#7ddfff"
-          intensity={4}
-        />
-        <Lightformer
-          form="rect"
-          position={[-5, 6, -3]}
-          scale={[6, 1.5, 1]}
-          color="#ff5db1"
-          intensity={3.5}
-        />
-        <Lightformer
-          form="rect"
-          position={[0, 7, -8]}
-          scale={[10, 0.8, 1]}
-          color="#ffd6a3"
-          intensity={1.5}
-        />
-      </Environment>
+      {/* IBL: baked map carrying the same cyan/magenta accent glows, so
+          the body picks up coloured streaks without a live probe. */}
+      <BakedEnvironment file={HDR_FILES['city-night']} />
 
       {/* Distant skyline — tall thin emissive towers */}
       <CityBuildings />

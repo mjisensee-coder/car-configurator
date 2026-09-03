@@ -1,4 +1,7 @@
-import { Canvas } from '@react-three/fiber';
+'use client';
+
+import { useCallback, useMemo } from 'react';
+import { Canvas, type GLProps } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { Suspense } from 'react';
 import { RealCar } from './models/RealCar';
@@ -9,6 +12,15 @@ import { useConfigurator } from './ConfiguratorContext';
 import { SceneEnvironment } from './environments/SceneEnvironment';
 import { getEnvironmentPreset } from './environments/environmentPresets';
 import { CameraFraming } from './CameraFraming';
+import { useRenderer } from './renderer/RendererContext';
+import { createWebGPURenderer, type GLFactoryProps } from './renderer/backend';
+
+/**
+ * preserveDrawingBuffer keeps the framebuffer readable after present,
+ * which is what html2canvas needs to capture build screenshots. Hoisted to
+ * module scope so its identity never changes between renders.
+ */
+const WEBGL_PARAMS = { preserveDrawingBuffer: true, antialias: true } as const;
 
 interface SceneProps {
   /** Forwarded to the Canvas — used by html2canvas screenshots. */
@@ -33,14 +45,33 @@ interface SceneProps {
  */
 export function Scene({ canvasId }: SceneProps) {
   const { config } = useConfigurator();
+  const { backend, reportFallback } = useRenderer();
   const preset = getEnvironmentPreset(config.environmentId);
   const cam = preset.camera;
 
+  // React Three Fiber 9 accepts a promise-returning `gl` factory, which is
+  // what lets the WebGPU adapter handshake finish before the first frame.
+  const webgpuFactory = useCallback(
+    (props: GLFactoryProps) => createWebGPURenderer(props, reportFallback),
+    [reportFallback],
+  ) as GLProps;
+
+  // Memoised on purpose: R3F reconfigures the root whenever the `gl` prop
+  // changes identity, so handing it a fresh object literal on every render
+  // makes the canvas tear itself down and rebuild mid-mount.
+  const glProp = useMemo<GLProps>(
+    () => (backend === 'webgpu' ? webgpuFactory : WEBGL_PARAMS),
+    [backend, webgpuFactory],
+  );
+
   return (
     <Canvas
+      // A renderer cannot be swapped in place — remount the canvas when the
+      // backend changes so R3F builds a fresh store around the new one.
+      key={backend}
       id={canvasId}
       shadows
-      gl={{ preserveDrawingBuffer: true, antialias: true }}
+      gl={glProp}
       camera={{ position: [5.5, 1.7, 6.5], fov: 38 }}
       dpr={[1, 2]}
     >

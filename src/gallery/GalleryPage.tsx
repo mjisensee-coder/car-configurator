@@ -1,15 +1,21 @@
+'use client';
+
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAllBuilds } from '@/services/galleryService';
+import { useRouter } from 'next/navigation';
 import { useConfigurator } from '@/configurator/ConfiguratorContext';
 import type { CommunityBuild } from '@/types';
 import { E30 } from '@/data/imageLibrary';
 import { Footer } from '@/components/Footer';
 
-export function GalleryPage() {
-  const allBuilds = getAllBuilds();
+/**
+ * Interactive half of the gallery. The page shell that wraps it is a server
+ * component (src/app/(shell)/gallery/page.tsx) which queries Postgres and
+ * passes the rows in, so the build cards are in the server-rendered HTML
+ * while the tag filter and "load into studio" action stay client-side.
+ */
+export function GalleryPage({ builds: allBuilds }: { builds: CommunityBuild[] }) {
   const { loadConfig } = useConfigurator();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const allTags = useMemo(() => {
@@ -24,7 +30,7 @@ export function GalleryPage() {
 
   const handleLoad = (build: CommunityBuild) => {
     loadConfig(build.config);
-    navigate('/configure');
+    router.push('/configure');
   };
 
   const totalSpend = allBuilds.reduce((sum, b) => sum + b.totalCost, 0);
