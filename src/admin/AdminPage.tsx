@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   approve,
   getEntry,
@@ -10,7 +10,48 @@ import {
   type QueueEntry,
   type QueueStatus,
 } from '@/services/catalogSyncService';
+import {
+  fetchBackendHealth,
+  type BackendHealth,
+  type Generation3DBackend,
+} from '@/services/partGeneratorService';
 import { ProceduralWheelPreview } from './ProceduralWheelPreview';
+
+/**
+ * Per-backend metadata shown in the UI. Costs are point-in-time and
+ * documented for the operator — the server is the source of truth.
+ */
+const BACKEND_META: Record<
+  Generation3DBackend,
+  { label: string; cost: string; tone: string }
+> = {
+  fal: {
+    label: 'TRELLIS.2',
+    cost: '~$0.02',
+    tone: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
+  },
+  tripo: {
+    label: 'Tripo3D',
+    cost: '~$0.30',
+    tone: 'bg-accent-gold/15 text-accent-gold border-accent-gold/40',
+  },
+  billboard: {
+    label: '2.5D Preview',
+    cost: 'free',
+    tone: 'bg-garage-700 text-garage-200 border-garage-600',
+  },
+};
+
+function BackendBadge({ backend }: { backend: Generation3DBackend }) {
+  const meta = BACKEND_META[backend];
+  return (
+    <span
+      className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full border ${meta.tone}`}
+    >
+      via {meta.label}
+    </span>
+  );
+}
 
 /**
  * Admin: review queue for AI-generated parts.
@@ -29,9 +70,30 @@ export function AdminPage() {
     () => getQueue(),
   );
 
+  const [health, setHealth] = useState<BackendHealth | null>(null);
+  const [selectedBackend, setSelectedBackend] =
+    useState<Generation3DBackend | null>(null);
+
   useEffect(() => {
     loadTrialParts();
+    let active = true;
+    fetchBackendHealth().then((h) => {
+      if (!active || !h) return;
+      setHealth(h);
+      setSelectedBackend(h.defaultBackend);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const availableBackends = useMemo<Generation3DBackend[]>(() => {
+    const list: Generation3DBackend[] = [];
+    if (health?.features.trellis) list.push('fal');
+    if (health?.features.tripo3D) list.push('tripo');
+    list.push('billboard');
+    return list;
+  }, [health]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = selectedId ? getEntry(selectedId) : null;
@@ -54,6 +116,55 @@ export function AdminPage() {
             . Click <em>Generate</em> to run the pipeline, then approve or reject
             the result.
           </p>
+
+          {selectedBackend && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className="text-[11px] uppercase tracking-wider text-garage-400">
+                3D backend
+              </span>
+              <div className="inline-flex rounded-lg border border-garage-700 bg-garage-800/60 p-0.5">
+                {(['fal', 'tripo', 'billboard'] as Generation3DBackend[]).map(
+                  (b) => {
+                    const meta = BACKEND_META[b];
+                    const available = availableBackends.includes(b);
+                    const active = selectedBackend === b;
+                    return (
+                      <button
+                        key={b}
+                        onClick={() => available && setSelectedBackend(b)}
+                        disabled={!available}
+                        title={
+                          available
+                            ? `${meta.label} (${meta.cost} per run)`
+                            : `${meta.label} unavailable — set the matching API key on the server`
+                        }
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                          active
+                            ? 'bg-garage-700 text-white'
+                            : available
+                              ? 'text-garage-300 hover:text-white'
+                              : 'text-garage-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {meta.label}
+                        <span className="ml-1.5 font-normal text-[10px] opacity-70">
+                          {meta.cost}
+                        </span>
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+              {health && (
+                <span className="text-[11px] text-garage-500">
+                  default:{' '}
+                  <span className="text-garage-300">
+                    {BACKEND_META[health.defaultBackend].label}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -83,7 +194,10 @@ export function AdminPage() {
         {/* Right: detail / preview */}
         <div className="lg:sticky lg:top-[80px] lg:self-start">
           {selected ? (
-            <DetailPanel entry={selected} />
+            <DetailPanel
+              entry={selected}
+              backend={selectedBackend ?? 'billboard'}
+            />
           ) : (
             <div className="bg-garage-800/40 border border-garage-700 rounded-2xl p-10 text-center text-garage-400">
               Select a queue entry to inspect it.
@@ -153,13 +267,29 @@ function StatusPill({ status }: { status: QueueStatus }) {
   );
 }
 
-function DetailPanel({ entry }: { entry: QueueEntry }) {
+function DetailPanel({
+  entry,
+  backend,
+}: {
+  entry: QueueEntry;
+  backend: Generation3DBackend;
+}) {
   const [running, setRunning] = useState(false);
   const handleGenerate = async () => {
     setRunning(true);
-    await runGeneration(entry.id);
+    // Wheels use the procedural pipeline, not /api/generate-3d — the
+    // backend choice is moot for them. For exhaust + future complex
+    // categories, pass the operator's pick through.
+    await runGeneration(
+      entry.id,
+      entry.trial.category === 'wheels' ? undefined : backend,
+    );
     setRunning(false);
   };
+  const generateLabel = (() => {
+    if (entry.trial.category === 'wheels') return 'Generate (procedural)';
+    return `Generate (${BACKEND_META[backend].label} · ${BACKEND_META[backend].cost})`;
+  })();
 
   return (
     <div className="bg-garage-800/40 border border-garage-700 rounded-2xl overflow-hidden">
@@ -183,7 +313,10 @@ function DetailPanel({ entry }: { entry: QueueEntry }) {
 
       <div className="p-5 space-y-4">
         <div>
-          <h3 className="text-lg font-bold">{entry.trial.displayName}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-lg font-bold">{entry.trial.displayName}</h3>
+            {entry.assetBackend && <BackendBadge backend={entry.assetBackend} />}
+          </div>
           <p className="text-xs text-garage-400 mt-0.5">
             {entry.trial.vendor} ·{' '}
             <a
@@ -198,6 +331,11 @@ function DetailPanel({ entry }: { entry: QueueEntry }) {
           {entry.trial.notes && (
             <p className="text-xs text-garage-500 mt-2 leading-relaxed">
               {entry.trial.notes}
+            </p>
+          )}
+          {entry.generationNote && (
+            <p className="text-[11px] text-garage-400 italic mt-2">
+              {entry.generationNote}
             </p>
           )}
         </div>
@@ -233,7 +371,7 @@ function DetailPanel({ entry }: { entry: QueueEntry }) {
               disabled={running}
               className="bg-gradient-to-r from-accent to-accent-hot hover:shadow-glow text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all disabled:opacity-60"
             >
-              {running ? 'Generating…' : 'Generate'}
+              {running ? 'Generating…' : generateLabel}
             </button>
           ) : null}
 
@@ -255,8 +393,9 @@ function DetailPanel({ entry }: { entry: QueueEntry }) {
                 onClick={handleGenerate}
                 disabled={running}
                 className="text-sm text-garage-300 hover:text-garage-100 px-3 py-2 rounded-lg transition-colors"
+                title={`Regenerate via ${BACKEND_META[backend].label}`}
               >
-                Regenerate
+                {running ? 'Regenerating…' : 'Regenerate'}
               </button>
             </>
           )}
