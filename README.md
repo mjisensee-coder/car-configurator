@@ -84,13 +84,29 @@ npm run build           # production build
 npm run start           # serve the production build
 npm run typecheck       # tsc --noEmit
 
+npm test                # full suite, ~1s
+npm run test:watch      # re-run on change
+
 npm run db:schema       # apply db/schema.sql
 npm run db:seed         # seed the catalog
-npm run db:verify       # run schema + seed + real queries against pg-mem
+npm run db:verify       # schema + seed + real queries against pg-mem
 
 npm run assets          # basis transcoder + HDR maps + KTX2 textures
 npm run assets:verify   # parse each asset with the browser's own loaders
 ```
+
+## Tests
+
+```bash
+npm test
+```
+
+139 tests in plain Node — no browser, no database server, no network. They
+cover share-link encoding, the catalog's query-string handling, the parts
+store, the data layer's fallback path, the SQL (against an in-memory
+Postgres), the API route handlers, image-to-3D backend selection, and the
+generated HDR and KTX2 assets. See [tests/README.md](./tests/README.md)
+for what is deliberately out of scope.
 
 ## Deploying
 
