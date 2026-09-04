@@ -35,7 +35,6 @@ const ROOM_H = 8;
 const STRIP_Z = [-4.5, -1.5, 1.5, 4.5];
 
 export function ProShowroom() {
-  const floorMask = useFloorMask();
   const { backend } = useRenderer();
 
   return (
@@ -75,45 +74,7 @@ export function ProShowroom() {
         ceilingColor="#1c1c22"
       />
 
-      {/* Polished concrete floor.
-
-          MeshReflectorMaterial patches GLSL through onBeforeCompile, which
-          the WebGPU pipeline's node materials never see — under that
-          backend it renders untextured. So the reflective version is used
-          on WebGL and a plain metallic standard material stands in on
-          WebGPU. Both share the KTX2 alpha mask, so the floor fades out at
-          the room edges either way. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[ROOM_W * 1.2, ROOM_D * 1.2]} />
-        {backend === 'webgpu' ? (
-          <meshStandardMaterial
-            alphaMap={floorMask}
-            transparent
-            color="#101015"
-            metalness={0.85}
-            roughness={0.18}
-          />
-        ) : (
-          <MeshReflectorMaterial
-            // KTX2 radial mask — fades the mirror out toward the room edges
-            // so the plane reads as an endless floor instead of a rectangle
-            // with visible corners.
-            alphaMap={floorMask}
-            transparent
-            mirror={0.75}
-            blur={[400, 100]}
-            resolution={1024}
-            mixBlur={1}
-            mixStrength={0.6}
-            roughness={0.4}
-            depthScale={1.2}
-            minDepthThreshold={0.85}
-            maxDepthThreshold={1}
-            color="#101015"
-            metalness={0.5}
-          />
-        )}
-      </mesh>
+      {backend === 'webgpu' ? <PlainFloor /> : <ReflectiveFloor />}
 
       {/* Tight contact shadow under the car */}
       <ContactShadows
@@ -168,5 +129,55 @@ export function ProShowroom() {
         color="#ffffff"
       />
     </>
+  );
+}
+
+/**
+ * WebGL floor: a real-time mirror, masked at the edges so the plane reads
+ * as an endless studio floor instead of a rectangle with visible corners.
+ */
+function ReflectiveFloor() {
+  const floorMask = useFloorMask();
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <planeGeometry args={[ROOM_W * 1.2, ROOM_D * 1.2]} />
+      <MeshReflectorMaterial
+        alphaMap={floorMask}
+        transparent
+        mirror={0.75}
+        blur={[400, 100]}
+        resolution={1024}
+        mixBlur={1}
+        mixStrength={0.6}
+        roughness={0.4}
+        depthScale={1.2}
+        minDepthThreshold={0.85}
+        maxDepthThreshold={1}
+        color="#101015"
+        metalness={0.5}
+      />
+    </mesh>
+  );
+}
+
+/**
+ * WebGPU floor: a plain metallic material, and deliberately no KTX2 mask.
+ *
+ * Two things in the WebGL floor cannot cross to the node-material
+ * pipeline. MeshReflectorMaterial patches GLSL through onBeforeCompile,
+ * which node materials never see. And drei's useKTX2 calls
+ * `detectSupport(gl)` on three-stdlib's KTX2Loader, which reads WebGL
+ * extensions off the renderer — handed a WebGPURenderer it throws
+ * ("Cannot read properties of undefined"), taking the whole scene down
+ * with it. Splitting the floor into two components is what keeps that
+ * hook from running at all under WebGPU; a conditional inside one
+ * component would still call it.
+ */
+function PlainFloor() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <planeGeometry args={[ROOM_W * 1.2, ROOM_D * 1.2]} />
+      <meshStandardMaterial color="#101015" metalness={0.85} roughness={0.18} />
+    </mesh>
   );
 }

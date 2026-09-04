@@ -11,7 +11,6 @@ const VALID_ENVIRONMENT_IDS: readonly EnvironmentId[] = [
   'showroom',
   'city-night',
   'modern-showroom',
-  'led-studio',
 ];
 
 /**

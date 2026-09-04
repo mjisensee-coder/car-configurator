@@ -34,18 +34,6 @@ export function Footer() {
             />{' '}
             by <CreditLink href="https://sketchfab.com/polsaris" text="Polsaris" />
           </div>
-          <div>
-            LED Studio:{' '}
-            <CreditLink
-              href="https://sketchfab.com/3d-models/studio-v1-for-car-9c45d19a7d434e2ca1640d6d2146e895"
-              text="Studio V1 For Car"
-            />{' '}
-            by{' '}
-            <CreditLink
-              href="https://sketchfab.com/velocity.motion"
-              text="Velocity Motion"
-            />
-          </div>
           <div className="text-garage-500">
             All Sketchfab assets licensed under{' '}
             <CreditLink

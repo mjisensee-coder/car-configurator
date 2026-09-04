@@ -24,7 +24,7 @@ const toArrayBuffer = (buf: Buffer): ArrayBuffer =>
     buf.byteOffset + buf.byteLength,
   ) as ArrayBuffer;
 
-const ENVIRONMENTS = ['studio', 'modern-showroom', 'led-studio', 'city-night'];
+const ENVIRONMENTS = ['studio', 'modern-showroom', 'city-night'];
 
 describe('RGBE encoder', () => {
   it('round-trips a mid-grey through the shared exponent', () => {

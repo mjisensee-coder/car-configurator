@@ -20,6 +20,11 @@ interface RendererContextValue {
   setBackend: (backend: RendererBackend) => void;
   /** Whether the browser exposes navigator.gpu at all. */
   webgpuAvailable: boolean;
+  /**
+   * True only when the URL carried an explicit `?renderer=`. The backend
+   * switch is hidden otherwise — see RendererToggle for why.
+   */
+  explicitOverride: boolean;
   /** Set when a WebGPU init failed and we silently dropped to WebGL. */
   fallbackReason: string | null;
   reportFallback: (reason: string) => void;
@@ -44,6 +49,7 @@ const RendererContext = createContext<RendererContextValue | undefined>(
 export function RendererProvider({ children }: { children: ReactNode }) {
   const [backend, setBackend] = useState<RendererBackend>(DEFAULT_BACKEND);
   const [webgpuAvailable, setWebgpuAvailable] = useState(false);
+  const [explicitOverride, setExplicitOverride] = useState(false);
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
 
   // navigator.gpu is browser-only; check after mount so the server render
@@ -53,7 +59,10 @@ export function RendererProvider({ children }: { children: ReactNode }) {
     const override = parseBackend(
       new URLSearchParams(window.location.search).get('renderer'),
     );
-    if (override) setBackend(override);
+    if (override) {
+      setBackend(override);
+      setExplicitOverride(true);
+    }
   }, []);
 
   const value = useMemo<RendererContextValue>(
@@ -64,10 +73,11 @@ export function RendererProvider({ children }: { children: ReactNode }) {
         setBackend(next);
       },
       webgpuAvailable,
+      explicitOverride,
       fallbackReason,
       reportFallback: setFallbackReason,
     }),
-    [backend, webgpuAvailable, fallbackReason],
+    [backend, webgpuAvailable, explicitOverride, fallbackReason],
   );
 
   return (

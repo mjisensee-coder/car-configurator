@@ -91,26 +91,6 @@ const PRESETS = {
     })),
     accents: [],
   },
-  'led-studio': {
-    // Velocity Motion GLB: 28.3 × 28.3 × 3.0 m. Dark and contrasty on
-    // purpose — the strips and the two colour accents do all the work.
-    room: { width: 28.3, depth: 28.3, height: 3.0 },
-    wall: { tint: hex(0x111116), level: 0.09 },
-    ceiling: { tint: hex(0x0c0c10), level: 0.06 },
-    floor: { tint: hex(0x08080b), level: 0.05 },
-    strips: [-3.2, 3.2].map((z) => ({
-      z,
-      length: 12,
-      thickness: 0.35,
-      intensity: 18,
-      color: [1, 1, 1],
-    })),
-    accents: [
-      { dir: [-1, 0.25, -0.35], radius: 0.5, color: [0.24, 0.5, 1], intensity: 5 },
-      { dir: [1, 0.25, -0.35], radius: 0.5, color: [1, 0.22, 0.3], intensity: 5 },
-      { dir: [0, 0.9, 0], radius: 0.8, color: [0.85, 0.9, 1], intensity: 0.8 },
-    ],
-  },
   'city-night': {
     // NightDisplay is an open scene: no ceiling, distant coloured glow.
     room: { width: 60, depth: 60, height: 26 },

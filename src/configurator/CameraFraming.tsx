@@ -20,7 +20,7 @@ import { Vector3, type PerspectiveCamera } from 'three';
  *   - Preserves the user's current azimuth + elevation — only scales the
  *     radial distance from `controls.target` to `camera.position`.
  *   - Clamped to the active environment's [minDistance, maxDistance], so
- *     tight rooms (Modern Showroom / LED Studio) can't pull back past
+ *     tight rooms (the Modern Showroom GLB) can't pull back past
  *     their walls.
  *
  * Side effect: if the user has manually zoomed in/out and then the

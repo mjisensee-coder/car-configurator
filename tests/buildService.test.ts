@@ -58,14 +58,17 @@ describe('config share links', () => {
 
 describe('environment id sanitising', () => {
   it('passes through every valid id', () => {
-    for (const id of ['showroom', 'city-night', 'modern-showroom', 'led-studio'] as const) {
+    for (const id of ['showroom', 'city-night', 'modern-showroom'] as const) {
       expect(normalizeEnvironmentId(id)).toBe(id);
     }
   });
 
   it('remaps retired ids instead of dropping the user somewhere random', () => {
-    expect(normalizeEnvironmentId('pro-garage')).toBe('led-studio');
+    expect(normalizeEnvironmentId('pro-garage')).toBe('city-night');
     expect(normalizeEnvironmentId('mountain-road')).toBe('modern-showroom');
+    // Retired after its GLB turned out to hide the car; old share links
+    // and gallery builds still carry it.
+    expect(normalizeEnvironmentId('led-studio')).toBe('city-night');
   });
 
   it.each([['unknown-room'], [null], [undefined], [42], [{}]])(

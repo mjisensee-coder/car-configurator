@@ -14,7 +14,6 @@ export const HDR_FILES = {
   showroom: '/hdr/studio.hdr',
   'city-night': '/hdr/city-night.hdr',
   'modern-showroom': '/hdr/modern-showroom.hdr',
-  'led-studio': '/hdr/led-studio.hdr',
 } as const;
 
 /** Radial mask that fades the reflective floor out toward its edges. */

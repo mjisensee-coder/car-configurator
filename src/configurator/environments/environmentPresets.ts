@@ -106,36 +106,12 @@ export const ENVIRONMENT_PRESETS: Record<EnvironmentId, EnvironmentPreset> = {
       target: [0, 0.6, 0],
     },
   },
-  'led-studio': {
-    id: 'led-studio',
-    name: 'LED Studio',
-    vibe: 'Dark contrasty studio with LED strips',
-    thumbnailUrl: PX(11110511),
-    // Velocity Motion GLB: 28.3×3×28.3m, Z asymmetric (back 10.8m, front 17.5m).
-    // Slightly tighter than the Polsaris room because the ceiling is 3.0m.
-    //
-    // Azimuth: the model is a 4-quad cyclorama (1 wall mesh, 8 triangles)
-    // with one face open. Limiting horizontal orbit to ±75° from the
-    // default-facing direction (camera at +Z) keeps the camera in the
-    // closed-walls hemisphere so the user can't rotate past the open side
-    // and see the void beyond.
-    camera: {
-      minDistance: 3.5,
-      maxDistance: 7.5,
-      minPolarAngle: 1.3,
-      maxPolarAngle: Math.PI / 2,
-      minAzimuthAngle: -Math.PI / 2.4,
-      maxAzimuthAngle: Math.PI / 2.4,
-      target: [0, 0.6, 0],
-    },
-  },
 };
 
 /** Display order in the selector. */
 export const ENVIRONMENT_LIST: EnvironmentPreset[] = [
   ENVIRONMENT_PRESETS.showroom,
   ENVIRONMENT_PRESETS['modern-showroom'],
-  ENVIRONMENT_PRESETS['led-studio'],
   ENVIRONMENT_PRESETS['city-night'],
 ];
 

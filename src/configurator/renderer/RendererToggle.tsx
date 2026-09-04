@@ -3,13 +3,28 @@
 import { useRenderer } from './RendererContext';
 
 /**
- * Backend switch. Only rendered when the browser actually exposes WebGPU,
- * so the control never offers something that cannot work.
+ * Backend switch — developer-facing, shown only when the URL carries an
+ * explicit `?renderer=`.
+ *
+ * It is not offered to users because the WebGPU path does not currently
+ * render this scene. three's WebGPURenderer initialises fine and reports a
+ * true WebGPU backend, but drei 10's components still assume a
+ * WebGLRenderer: useKTX2 calls `detectSupport(gl)` and reads WebGL
+ * extensions off it, and the same assumption shows up elsewhere in the
+ * scene, so the first frame throws "Cannot read properties of undefined
+ * (reading 'has')" and takes the canvas down. Once that happens the
+ * cached loaders stay broken for the rest of the page session, so a user
+ * who flipped the switch could not flip it back.
+ *
+ * Keep the plumbing — it is a handful of lines and the day drei's
+ * components are backend-agnostic this becomes a one-line change. Until
+ * then WebGL 2 renders this car with frames to spare.
  */
 export function RendererToggle() {
-  const { backend, setBackend, webgpuAvailable, fallbackReason } = useRenderer();
+  const { backend, setBackend, webgpuAvailable, explicitOverride, fallbackReason } =
+    useRenderer();
 
-  if (!webgpuAvailable) return null;
+  if (!webgpuAvailable || !explicitOverride) return null;
 
   return (
     <div className="pointer-events-auto flex flex-col items-end gap-1">

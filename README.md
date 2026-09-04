@@ -101,7 +101,7 @@ npm run assets:verify   # parse each asset with the browser's own loaders
 npm test
 ```
 
-139 tests in plain Node — no browser, no database server, no network. They
+137 tests in plain Node — no browser, no database server, no network. They
 cover share-link encoding, the catalog's query-string handling, the parts
 store, the data layer's fallback path, the SQL (against an in-memory
 Postgres), the API route handlers, image-to-3D backend selection, and the

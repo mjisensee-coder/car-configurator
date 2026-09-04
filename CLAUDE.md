@@ -152,17 +152,29 @@ which is what lets the WebGPU adapter handshake finish before the first
 frame; if it fails the factory returns a WebGLRenderer rather than
 letting the canvas throw.
 
-WebGPU is **opt-in**: the toggle only appears when `navigator.gpu`
-exists, and `?renderer=webgpu` forces it. Two things to know:
+**WebGPU does not currently render this scene, and the switch is hidden
+from users.** It appears only when the URL carries an explicit
+`?renderer=webgpu`, which is a developer escape hatch.
 
-- Selecting WebGPU selects a *pipeline*, not just an API — materials
-  compile through the node/TSL system. Anything that patches GLSL by
-  hand breaks. `MeshReflectorMaterial` is the one in this codebase, so
-  `ProShowroom` swaps it for a plain metallic standard material under
-  WebGPU.
-- Verified only as far as initialisation: the renderer reports a true
-  WebGPU backend. The scene under WebGPU has **not** been visually
-  confirmed. Keep the default on WebGL until it has.
+What was measured: three's `WebGPURenderer` initialises and reports a
+true WebGPU backend, so the R3F wiring is right. The scene then throws
+`Cannot read properties of undefined (reading 'has')` on the first frame,
+because drei 10's components still assume a `WebGLRenderer` — `useKTX2`
+calls `detectSupport(gl)` and reads WebGL extensions straight off it, and
+the same assumption appears elsewhere in the scene. Once it throws, the
+cached loaders stay broken for the rest of the page session, which is why
+a visible toggle would be a trap: flipping it back does not recover.
+
+Selecting WebGPU also selects a *pipeline*, not just an API — materials
+compile through the node/TSL system, so anything patching GLSL by hand
+breaks. `MeshReflectorMaterial` is the one here, which is why the floor
+is split into `ReflectiveFloor` (WebGL) and `PlainFloor` (WebGPU); the
+split also keeps the `useKTX2` hook from running at all under WebGPU.
+
+The plumbing is kept because it is small and the fix is upstream: when
+drei's components stop assuming WebGL, re-showing the toggle is a
+one-line change. Until then WebGL 2 renders one car and a few materials
+with frames to spare.
 
 ### Environments and baked IBL
 
@@ -175,6 +187,13 @@ every frame for a set of lights that never move.
 map when it arrives, rather than suspending. drei's `<Environment files>`
 suspends the whole scene subtree — including every light in it — so any
 stall there leaves the studio on its loading fallback with an unlit car.
+
+There are three environments: Pro Showroom, Modern Showroom and Night
+Display. A fourth, LED Studio, was removed — its Sketchfab GLB ships two
+light-emitter meshes roughly 573 units tall against a unit-sized room, so
+they engulfed a camera constrained to 7.5 units and the car was never
+visible. `LEGACY_ENV_REMAP` sends its id to `city-night` so old share
+links and gallery builds still resolve.
 
 The maps are generated, not downloaded: `scripts/generate-hdri.mjs`
 ray-traces each room analytically (same dimensions, same ceiling strips
@@ -198,7 +217,10 @@ npm run assets:verify   # parse every output with the loaders the browser uses
   the radial mask that fades the reflective floor at its edges. With
   KTX-Software's `toktx` on PATH it emits UASTC; otherwise a
   zstd-supercompressed RGBA8 KTX2 (small over the wire, still
-  uncompressed in VRAM). Install `ktx` and re-run for the real thing.
+  uncompressed in VRAM). To get the compressed variant install
+  KTX-Software — `brew install ktx`, or the Khronos release for machines
+  without Homebrew — and re-run `npm run assets:ktx2`. The committed file
+  is the zstd fallback.
 
 Assets are served with a one-year immutable cache header. Their
 filenames are **not** content-hashed, so a regenerated asset will not
@@ -259,7 +281,7 @@ the upstream URL and says so in `note` rather than failing the job.
 ## Testing
 
 ```bash
-npm test            # 139 tests, ~1s, no browser or database needed
+npm test            # 137 tests, ~1s, no browser or database needed
 npm run test:watch
 ```
 

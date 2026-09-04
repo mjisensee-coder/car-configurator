@@ -17,7 +17,6 @@ into this folder without renaming.
 | File name | Source (Sketchfab) | Author | License | Size |
 |---|---|---|---|---|
 | `car-showroom_2.glb` | [Car-Showroom 2](https://sketchfab.com/3d-models/car-showroom-2-e7a3497e8a7c487e906b2d8814b018f0) | [Polsaris](https://sketchfab.com/polsaris) | CC BY 4.0 | ~3MB |
-| `studio_v1_for_car.glb` | [Studio V1 For Car](https://sketchfab.com/3d-models/studio-v1-for-car-9c45d19a7d434e2ca1640d6d2146e895) | [Velocity Motion](https://sketchfab.com/velocity.motion) | CC BY 4.0 | ~12MB |
 
 Both GLBs are at native real-world meter scale (28m × 3m × 28m bounding
 box, floor at y≈0). They're mounted at identity transform — the car at
@@ -39,7 +38,7 @@ is satisfied automatically once the GLB is in place.
 
 1. Append the new id to the `EnvironmentId` union in `src/types/index.ts`.
 2. Build a scene component in
-   `src/configurator/environments/scenes/`, copying `LedStudio.tsx` as a
+   `src/configurator/environments/scenes/`, copying `ModernShowroom.tsx` as a
    starting point. Wrap the GLB load with `<SketchfabSceneFallback>`.
 3. Register the new id in `SceneEnvironment.tsx` (router) and append a
    metadata entry to `environmentPresets.ts`.

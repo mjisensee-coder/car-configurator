@@ -92,8 +92,7 @@ export type StickerId = 'none' | 'mtech' | 'alpina' | 'hartge' | 'is-it-stance';
 export type EnvironmentId =
   | 'showroom'
   | 'city-night'
-  | 'modern-showroom'
-  | 'led-studio';
+  | 'modern-showroom';
 
 /**
  * Legacy environment ids that have been retired. Old share links and
@@ -102,8 +101,12 @@ export type EnvironmentId =
  * reference; never returned to consumers.
  */
 export const LEGACY_ENV_REMAP: Record<string, EnvironmentId> = {
-  'pro-garage': 'led-studio',
+  'pro-garage': 'city-night',
   'mountain-road': 'modern-showroom',
+  // Retired: its Sketchfab GLB ships light meshes ~573 units tall, which
+  // engulf the camera and hide the car. Night Display is the nearest
+  // surviving mood, so old links land somewhere recognisable.
+  'led-studio': 'city-night',
 };
 
 export interface CarConfig {
