@@ -279,7 +279,31 @@ statically generated pages. The Dockerfile declares it as an `ARG` so a
 Railway service variable reaches `next build`. `getSiteUrl()` falls back
 to `RAILWAY_PUBLIC_DOMAIN`, then `VERCEL_PROJECT_PRODUCTION_URL`, then
 localhost — never to an invented domain, because a canonical tag pointing
-at a domain you do not own is worse than none at all.
+at a domain you do not own is worse than none at all. Railway does inject
+`RAILWAY_PUBLIC_DOMAIN` into the Docker build, so the fallback resolves
+correctly on its own; the explicit variable pins it rather than leaving
+it to the platform. Point it at the custom domain the day there is one.
+
+### The live deployment
+
+Railway project `car-configurator`, service `web`, auto-deploying from
+GitHub `main` — a push to main is a deploy, there is no separate step.
+
+Set on that service: `NEXT_PUBLIC_SITE_URL` and `GEMINI_API_KEY`.
+Not set: `DATABASE_URL`, `FAL_KEY`, `TRIPO3D_API_KEY`.
+
+**Running with no database is a supported mode, and is what production
+does today.** `/api/healthz` reports `database.configured: false` and
+every query serves `src/data/fallbackCatalog.ts`. Nothing is degraded:
+the catalog, part pages, fitment specs and gallery all work, because the
+JSON and a seeded database are generated from the same files. What a
+database would add is editing the catalog without a redeploy — not
+user-generated content, since there is no write endpoint for parts or
+builds. Adding one is `npm run db:schema && npm run db:seed` against any
+`DATABASE_URL`; it does not have to be Railway's.
+
+With no `FAL_KEY` or `TRIPO3D_API_KEY`, `/api/generate-3d` resolves to
+the billboard backend and says so in its response.
 - **Railway / Docker** — `Dockerfile` builds with
   `NEXT_OUTPUT=standalone` and runs `node server.js` from the standalone
   bundle. `railway.json` probes `/api/healthz`.
