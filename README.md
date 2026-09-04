@@ -23,9 +23,8 @@ npm run dev
 Open <http://localhost:3000>. No database is required — with
 `DATABASE_URL` unset the catalog is served from the bundled JSON.
 
-`npm run assets` generates the baked HDR environment maps, the KTX2 floor
-mask and the Basis transcoder into `public/`. They are build outputs, so
-run it once after cloning.
+`npm run assets` generates the baked HDR environment maps into `public/`.
+They are build outputs, so run it once after cloning.
 
 The build studio and admin page need a sign-in; the demo credentials are
 in `src/auth/AuthContext.tsx`.
@@ -91,7 +90,7 @@ npm run db:schema       # apply db/schema.sql
 npm run db:seed         # seed the catalog
 npm run db:verify       # schema + seed + real queries against pg-mem
 
-npm run assets          # basis transcoder + HDR maps + KTX2 textures
+npm run assets          # generate the HDR environment maps
 npm run assets:verify   # parse each asset with the browser's own loaders
 ```
 
@@ -101,11 +100,11 @@ npm run assets:verify   # parse each asset with the browser's own loaders
 npm test
 ```
 
-137 tests in plain Node — no browser, no database server, no network. They
+146 tests in plain Node — no browser, no database server, no network. They
 cover share-link encoding, the catalog's query-string handling, the parts
 store, the data layer's fallback path, the SQL (against an in-memory
 Postgres), the API route handlers, image-to-3D backend selection, and the
-generated HDR and KTX2 assets. See [tests/README.md](./tests/README.md)
+generated HDR environment maps. See [tests/README.md](./tests/README.md)
 for what is deliberately out of scope.
 
 ## Deploying

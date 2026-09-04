@@ -22,7 +22,9 @@ a fresh clone.
 | `database.test.ts` | `schema.sql`, the real seed statements, and the app's own SELECT text against an in-memory Postgres |
 | `api.test.ts` | Route handler status codes, shapes, cache headers, and input validation |
 | `ai.test.ts` | Image-to-3D backend selection and its degradation chain |
-| `assets.test.ts` | The RGBE encoder round-tripped through both HDR loaders, and every generated asset parsed with the loader the browser uses |
+| `assets.test.ts` | The RGBE encoder round-tripped through both HDR loaders, and every generated map parsed with the loader the browser uses |
+| `floorMask.test.ts` | The runtime-generated floor gradient that replaced the KTX2 texture |
+| `siteUrl.test.ts` | Canonical/Open Graph/sitemap origin resolution across platforms |
 
 ## Two deliberate choices
 

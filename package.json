@@ -14,11 +14,9 @@
     "db:schema": "node db/apply-schema.mjs",
     "db:seed": "node db/seed.mjs",
     "db:verify": "vitest run tests/database.test.ts",
-    "assets:basis": "node scripts/copy-basis-transcoder.mjs",
     "assets:hdr": "node scripts/generate-hdri.mjs",
-    "assets:ktx2": "node scripts/encode-ktx2.mjs",
     "assets:verify": "vitest run tests/assets.test.ts",
-    "assets": "npm run assets:basis && npm run assets:hdr && npm run assets:ktx2 && npm run assets:verify"
+    "assets": "npm run assets:hdr && npm run assets:verify"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
@@ -38,7 +36,6 @@
     "@types/react-dom": "^19.2.5",
     "@types/three": "^0.185.4",
     "autoprefixer": "^10.4.20",
-    "ktx-parse": "^1.1.0",
     "pg-mem": "^3.0.14",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",

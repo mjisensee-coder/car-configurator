@@ -22,7 +22,7 @@ This file is for engineers (and Claude) extending the codebase.
 
 ```
 db/                 schema.sql + operational scripts (apply, seed)
-scripts/            asset pipeline (HDR baking, KTX2 encoding, transcoder)
+scripts/            asset pipeline (HDR baking)
 tests/              Vitest suite — see tests/README.md for scope
 src/
   app/              App Router — routes, layouts, API route handlers
@@ -33,7 +33,7 @@ src/
   catalog/          Catalog filters + part card (server components)
   components/       Shared, page-agnostic UI (NavBar, Footer)
   configurator/     3D studio
-    environments/   Scene presets, baked HDR loader, KTX2 floor mask
+    environments/   Scene presets, baked HDR loader, generated floor mask
     models/         Model loader + placeholder car
     parts/          Per-category part swap components
     renderer/       WebGL / WebGPU backend selection
@@ -159,17 +159,18 @@ from users.** It appears only when the URL carries an explicit
 What was measured: three's `WebGPURenderer` initialises and reports a
 true WebGPU backend, so the R3F wiring is right. The scene then throws
 `Cannot read properties of undefined (reading 'has')` on the first frame,
-because drei 10's components still assume a `WebGLRenderer` — `useKTX2`
-calls `detectSupport(gl)` and reads WebGL extensions straight off it, and
-the same assumption appears elsewhere in the scene. Once it throws, the
+because drei 10's components still assume a `WebGLRenderer`. The clearest
+case was `useKTX2`, which called `detectSupport(gl)` and read WebGL
+extensions straight off the renderer; that particular one is gone now
+that the floor mask is generated, but the same assumption appears
+elsewhere in the scene and the failure persists. Once it throws, the
 cached loaders stay broken for the rest of the page session, which is why
 a visible toggle would be a trap: flipping it back does not recover.
 
 Selecting WebGPU also selects a *pipeline*, not just an API — materials
 compile through the node/TSL system, so anything patching GLSL by hand
 breaks. `MeshReflectorMaterial` is the one here, which is why the floor
-is split into `ReflectiveFloor` (WebGL) and `PlainFloor` (WebGPU); the
-split also keeps the `useKTX2` hook from running at all under WebGPU.
+is split into `ReflectiveFloor` (WebGL) and `PlainFloor` (WebGPU).
 
 The plumbing is kept because it is small and the fix is upstream: when
 drei's components stop assuming WebGL, re-showing the toggle is a
@@ -205,22 +206,28 @@ them as "dark grey × ambient" measures out almost black.
 ### Assets
 
 ```bash
-npm run assets          # transcoder + HDR + KTX2, then verify
+npm run assets          # generate the HDR maps, then verify them
 npm run assets:verify   # parse every output with the loaders the browser uses
 ```
 
-- `scripts/copy-basis-transcoder.mjs` vendors the Basis transcoder from
-  the installed three into `public/basis/`. drei's `useKTX2` otherwise
-  fetches it from a CDN, which puts a third-party request on the
-  critical path and decouples it from our three version.
-- `scripts/encode-ktx2.mjs` writes `public/textures/floor-alpha.ktx2`,
-  the radial mask that fades the reflective floor at its edges. With
-  KTX-Software's `toktx` on PATH it emits UASTC; otherwise a
-  zstd-supercompressed RGBA8 KTX2 (small over the wire, still
-  uncompressed in VRAM). To get the compressed variant install
-  KTX-Software — `brew install ktx`, or the Khronos release for machines
-  without Homebrew — and re-run `npm run assets:ktx2`. The committed file
-  is the zstd fallback.
+The only generated assets are the three environment maps. The floor mask
+is computed at runtime by `environments/floorMask.ts`.
+
+**There is deliberately no KTX2 pipeline.** There was one: a
+`floor-alpha.ktx2` plus the Basis transcoder vendored into
+`public/basis/`. KTX2 exists to keep textures compressed in *video*
+memory, and it pays for itself on a scene with many or large textures.
+This scene had exactly one texture and it was a gradient — 56 KB for the
+file and 571 KB for the transcoder that unpacks it, about 627 KB of
+download, to deliver something a few lines of arithmetic produce for
+nothing, at identical VRAM. It also needed a build-time encoder
+(`toktx`) that most machines do not have, so in practice it shipped an
+uncompressed fallback and got none of the benefit it existed for.
+
+If real textures arrive — paint maps, part textures, photo-real
+environments — reinstating it is the right call, and
+`scripts/encode-ktx2.mjs` and `scripts/copy-basis-transcoder.mjs` are in
+git history.
 
 Assets are served with a one-year immutable cache header. Their
 filenames are **not** content-hashed, so a regenerated asset will not
@@ -289,11 +296,11 @@ the upstream URL and says so in `note` rather than failing the job.
 ## Testing
 
 ```bash
-npm test            # 137 tests, ~1s, no browser or database needed
+npm test            # 146 tests, ~1s, no browser or database needed
 npm run test:watch
 ```
 
-Eight files under `tests/`, all in plain Node:
+Ten files under `tests/`, all in plain Node:
 
 | Area | What it pins down |
 |---|---|
@@ -304,7 +311,9 @@ Eight files under `tests/`, all in plain Node:
 | Database | Real schema, real seed, real SELECT text against in-memory Postgres |
 | API | Route handler shapes, status codes, cache headers, validation |
 | 3D backends | fal.ai → Tripo3D → billboard selection and degradation |
-| Assets | RGBE encoder round trip plus every generated file, parsed with the browser's own loaders |
+| Assets | RGBE encoder round trip plus every generated map, parsed with the browser's own loaders |
+| Floor mask | The runtime-generated gradient that replaced the KTX2 texture |
+| Site origin | Canonical/OG/sitemap URL resolution across platforms |
 
 The asset tests exist because a broken encoder is invisible to code
 review — a bad RLE run just shows up as a black showroom. They parse each

@@ -33,7 +33,7 @@ const nextConfig = {
       {
         // 3D assets are content-addressed by filename and never mutate in
         // place — the same policy server.js used to apply by hand.
-        source: '/:path(models|environments|hdr|textures|basis)/:file*',
+        source: '/:path(models|environments|hdr)/:file*',
         headers: [
           {
             key: 'Cache-Control',

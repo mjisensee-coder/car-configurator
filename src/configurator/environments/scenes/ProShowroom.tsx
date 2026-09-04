@@ -2,7 +2,7 @@ import { MeshReflectorMaterial, ContactShadows } from '@react-three/drei';
 import { RoomShell } from './shared';
 import { HDR_FILES } from '../assets';
 import { BakedEnvironment } from '../BakedEnvironment';
-import { useFloorMask } from '../useFloorMask';
+import { useFloorMask } from '../floorMask';
 import { useRenderer } from '../../renderer/RendererContext';
 
 /**
@@ -142,6 +142,8 @@ function ReflectiveFloor() {
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[ROOM_W * 1.2, ROOM_D * 1.2]} />
       <MeshReflectorMaterial
+        // Generated radial mask — fades the mirror out toward the room
+        // edges so the plane reads as an endless floor.
         alphaMap={floorMask}
         transparent
         mirror={0.75}
