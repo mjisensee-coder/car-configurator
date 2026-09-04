@@ -7,6 +7,17 @@ RUN npm ci
 
 COPY . .
 
+# Canonical links, Open Graph URLs and sitemap.xml are baked into the
+# statically generated pages, so the origin has to be known at BUILD time,
+# not just at runtime. Railway and other Docker hosts only pass service
+# variables into a build if the Dockerfile declares them as ARGs — without
+# these two lines the build falls back to localhost and every canonical
+# tag ships wrong.
+ARG NEXT_PUBLIC_SITE_URL
+ARG RAILWAY_PUBLIC_DOMAIN
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV RAILWAY_PUBLIC_DOMAIN=$RAILWAY_PUBLIC_DOMAIN
+
 # `standalone` emits a self-contained server bundle with only the modules
 # actually imported, so the runtime image does not need node_modules.
 ENV NEXT_OUTPUT=standalone

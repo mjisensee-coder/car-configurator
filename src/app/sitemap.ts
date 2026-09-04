@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getAllParts } from '@/server/queries';
+import { getSiteUrl } from '@/server/siteUrl';
 
 /**
  * Sitemap covering the public, indexable surface: catalog, part pages,
@@ -7,7 +8,7 @@ import { getAllParts } from '@/server/queries';
  * are sign-in gated or useless to a crawler.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://e30forge.app';
+  const base = getSiteUrl();
   const parts = await getAllParts();
 
   const staticRoutes: MetadataRoute.Sitemap = [

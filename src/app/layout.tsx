@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import '@/styles.css';
 import { Providers } from './providers';
+import { getSiteUrl } from '@/server/siteUrl';
 
 /**
  * Root layout. Server component — it renders the document shell and hands
@@ -11,7 +12,7 @@ import { Providers } from './providers';
  * pages now ship real HTML with real <title>/<meta> to a crawler.
  */
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://e30forge.app';
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

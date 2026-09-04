@@ -265,6 +265,14 @@ The same tree deploys two ways:
 
 - **Vercel** — zero config. Set `DATABASE_URL` (point it at the Railway
   Postgres public URL), `NEXT_PUBLIC_SITE_URL`, and the API keys.
+
+`NEXT_PUBLIC_SITE_URL` must be set at **build** time, not just runtime:
+canonical links, Open Graph URLs and `sitemap.xml` are baked into the
+statically generated pages. The Dockerfile declares it as an `ARG` so a
+Railway service variable reaches `next build`. `getSiteUrl()` falls back
+to `RAILWAY_PUBLIC_DOMAIN`, then `VERCEL_PROJECT_PRODUCTION_URL`, then
+localhost — never to an invented domain, because a canonical tag pointing
+at a domain you do not own is worse than none at all.
 - **Railway / Docker** — `Dockerfile` builds with
   `NEXT_OUTPUT=standalone` and runs `node server.js` from the standalone
   bundle. `railway.json` probes `/api/healthz`.
