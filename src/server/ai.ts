@@ -93,7 +93,7 @@ export async function callGeminiVision(
     return { ok: false, status: 503, error: 'GEMINI_API_KEY is not set on the server.' };
   }
   const cleanBase64 = String(base64).replace(/^data:[^;]+;base64,/, '');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY!)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY!)}`;
   let upstream: Response;
   try {
     upstream = await fetch(url, {
